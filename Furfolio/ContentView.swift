@@ -59,14 +59,32 @@ struct ContentView: View {
                             OwnerProfileView(dogOwner: dogOwner)
                         } label: {
                             HStack {
-                                Text(dogOwner.ownerName)
-                                    .font(.headline)
-                                Text(dogOwner.dogName)
-                                    .font(.subheadline)
-                                    .foregroundColor(.gray)
-                                Text("(\(dogOwner.breed))") // Display breed in the list
-                                    .font(.subheadline)
-                                    .foregroundColor(.blue)
+                                // Display image if available, otherwise show a placeholder
+                                if let dogImage = dogOwner.dogImage, let uiImage = UIImage(data: dogImage) {
+                                    Image(uiImage: uiImage)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 50, height: 50)
+                                        .clipShape(Circle())
+                                        .overlay(Circle().stroke(Color.gray, lineWidth: 1))
+                                } else {
+                                    Image(systemName: "person.circle.fill")
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 50, height: 50)
+                                        .foregroundColor(.gray)
+                                }
+
+                                VStack(alignment: .leading) {
+                                    Text(dogOwner.ownerName)
+                                        .font(.headline)
+                                    Text(dogOwner.dogName)
+                                        .font(.subheadline)
+                                        .foregroundColor(.gray)
+                                    Text("(\(dogOwner.breed))") // Display breed in the list
+                                        .font(.subheadline)
+                                        .foregroundColor(.blue)
+                                }
                             }
                         }
                     }

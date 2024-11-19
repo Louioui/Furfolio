@@ -16,7 +16,8 @@ final class DogOwner {
     let address: String
     var chargeHistory: [Charge] = []
     var appointments: [Appointment] = []
-    
+    @Relationship var groomingSessions: [GroomingSession] = []
+
     // Image stored as Data (binary format)
     var dogImage: Data? // This stores the image in binary format
     
@@ -33,7 +34,3 @@ final class DogOwner {
         self.notes = notes // Initialize the notes
     }
 }
-
-
-
-
