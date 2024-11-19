@@ -5,57 +5,114 @@
 //  Created by mac on 11/18/24.
 //
 
+
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @Query private var dogOwners: [DogOwner]
+
+    // For the search functionality
+    @State private var searchText = ""
+    
+    // State variable to show input sheet for adding dog owners
+    @State private var isShowingAddOwnerSheet = false
+    
+    // State for selected dog owner
+    @State private var selectedDogOwner: DogOwner?
 
     var body: some View {
         NavigationSplitView {
+            // Main List View
             List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
+                // Upcoming Appointments Section
+                Section(header: Text("Upcoming Appointments")) {
+                    ForEach(dogOwners.filter { dogOwner in
+                        dogOwner.appointments.contains { appointment in
+                            let today = Calendar.current.startOfDay(for: Date())
+                            return appointment.date > today && appointment.date < today.addingTimeInterval(7 * 24 * 60 * 60)
+                        }
+                    }) { dogOwner in
+                        NavigationLink {
+                            OwnerProfileView(dogOwner: dogOwner)
+                        } label: {
+                            HStack {
+                                Text(dogOwner.ownerName)
+                                    .font(.headline)
+                                Text("Next Appointment: \(dogOwner.appointments.first?.date.formatted(.dateTime.month().day().year().hour().minute()) ?? "N/A")")
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
+                            }
+                        }
                     }
                 }
-                .onDelete(perform: deleteItems)
+
+                // Main Dog Owners Section
+                Section(header: Text("Dog Owners")) {
+                    ForEach(dogOwners.filter { owner in
+                        // Filter dog owners based on search text
+                        searchText.isEmpty || owner.ownerName.localizedCaseInsensitiveContains(searchText) || owner.dogName.localizedCaseInsensitiveContains(searchText)
+                    }) { dogOwner in
+                        NavigationLink {
+                            OwnerProfileView(dogOwner: dogOwner)
+                        } label: {
+                            HStack {
+                                Text(dogOwner.ownerName)
+                                    .font(.headline)
+                                Text(dogOwner.dogName)
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
+                                Text("(\(dogOwner.breed))") // Display breed in the list
+                                    .font(.subheadline)
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                    }
+                    .onDelete(perform: deleteDogOwners) // Correct place for onDelete
+                }
             }
+            .navigationTitle("Dog Owners")
+            .searchable(text: $searchText) // Search bar at the top
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
+                    // "+" button to add new Dog Owner
+                    Button(action: {
+                        isShowingAddOwnerSheet = true
+                    }) {
+                        Label("Add Dog Owner", systemImage: "plus")
                     }
+                }
+            }
+            .sheet(isPresented: $isShowingAddOwnerSheet) {
+                AddDogOwnerView { ownerName, dogName, breed, contactInfo, address, tags, notes in
+                    addDogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, tags: tags, notes: notes)
                 }
             }
         } detail: {
-            Text("Select an item")
-        }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+            if let selectedDogOwner = selectedDogOwner {
+                OwnerProfileView(dogOwner: selectedDogOwner)
+            } else {
+                Text("Select a dog owner to view charge history.")
             }
         }
     }
-}
 
-#Preview {
-    ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+    // Add a new Dog Owner with inputted dog and owner name
+    private func addDogOwner(ownerName: String, dogName: String, breed: String, contactInfo: String, address: String, tags: String, notes: String) {
+        withAnimation {
+            let newOwner = DogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, tags: tags, notes: notes)
+            modelContext.insert(newOwner)
+        }
+    }
+
+    // Delete Dog Owner
+    private func deleteDogOwners(offsets: IndexSet) {
+        withAnimation {
+            for index in offsets {
+                modelContext.delete(dogOwners[index])
+            }
+        }
+    }
 }
