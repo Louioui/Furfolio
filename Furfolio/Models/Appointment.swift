@@ -5,7 +5,6 @@
 //  Created by mac on 11/18/24.
 //
 
-
 import Foundation
 import SwiftData
 
@@ -30,4 +29,5 @@ final class Appointment {
         case overdue
     }
 }
+
 

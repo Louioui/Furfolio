@@ -9,7 +9,15 @@
 import SwiftUI
 
 struct OwnerProfileView: View {
-    var dogOwner: DogOwner
+    @Environment(\.modelContext) private var modelContext
+    @State var dogOwner: DogOwner
+    @State private var editedNotes: String // To track the edited note
+    
+    // Initialize with the dog's existing notes
+    init(dogOwner: DogOwner) {
+        self._dogOwner = State(initialValue: dogOwner)
+        self._editedNotes = State(initialValue: dogOwner.notes) // Initialize the notes for editing
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -23,19 +31,43 @@ struct OwnerProfileView: View {
                 .font(.subheadline)
             Text("Address: \(dogOwner.address)")
                 .font(.subheadline)
-            Text("Tags: \(dogOwner.tags)")
-                .font(.subheadline)
-                .foregroundColor(.gray)
 
             Divider()
 
-            Text("Notes:") // Label for notes
-                .font(.headline)
-            Text(dogOwner.notes) // Display the notes here
-                .font(.subheadline)
-                .foregroundColor(.gray)
+            // Editable Notes Section
+            Section(header: Text("Notes")) {
+                TextEditor(text: $editedNotes)
+                    .frame(height: 150)
+                    .padding()
+                    .background(Color(UIColor.secondarySystemBackground))
+                    .cornerRadius(8)
+                    .border(Color.gray, width: 1)
+                    .padding(.bottom)
+
+                HStack {
+                    Button("Save Notes") {
+                        // Save changes to the dog owner's notes
+                        dogOwner.notes = editedNotes
+                        saveChanges()
+                    }
+                    .padding(.top)
+
+                    Spacer()
+
+                    // Add a button to clear the notes
+                    Button("Clear Notes") {
+                        // If the user wants to clear the notes
+                        editedNotes = "" // Reset the notes text
+                        dogOwner.notes = "" // Clear the note from the model
+                        saveChanges()
+                    }
+                    .foregroundColor(.red)
+                    .padding(.top)
+                }
+            }
 
             Divider()
+
             Text("Appointment Schedule")
                 .font(.headline)
             List(dogOwner.appointments) { appointment in
@@ -46,11 +78,6 @@ struct OwnerProfileView: View {
                     Text("Status: \(appointment.status.rawValue.capitalized)")
                         .font(.subheadline)
                         .foregroundColor(appointment.status == .completed ? .green : .gray)
-                    if let appointmentNotes = appointment.notes {
-                        Text("Notes: \(appointmentNotes)") // Display appointment notes
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
-                    }
                 }
             }
         }
@@ -60,4 +87,14 @@ struct OwnerProfileView: View {
         .shadow(radius: 5)
         .navigationTitle("\(dogOwner.ownerName)'s Profile")
     }
+
+    private func saveChanges() {
+        do {
+            try modelContext.save() // Save the updated dog owner with the new notes
+        } catch {
+            // Handle the error (for example, show an alert or log the error)
+            print("Failed to save changes: \(error.localizedDescription)")
+        }
+    }
+
 }

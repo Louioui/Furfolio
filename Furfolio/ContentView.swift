@@ -5,7 +5,6 @@
 //  Created by mac on 11/18/24.
 //
 
-
 import SwiftUI
 import SwiftData
 import UserNotifications
@@ -17,7 +16,7 @@ struct ContentView: View {
     // For the search functionality
     @State private var searchText = ""
     
-    // State variable to show input sheet for adding dog owners
+    // State variable to show input sheet
     @State private var isShowingAddOwnerSheet = false
     
     // State for selected dog owner
@@ -86,8 +85,8 @@ struct ContentView: View {
                 }
             }
             .sheet(isPresented: $isShowingAddOwnerSheet) {
-                AddDogOwnerView { ownerName, dogName, breed, contactInfo, address, tags, notes in
-                    addDogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, tags: tags, notes: notes)
+                AddDogOwnerView { ownerName, dogName, breed, contactInfo, address in
+                    addDogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address)
                 }
             }
         } detail: {
@@ -100,9 +99,9 @@ struct ContentView: View {
     }
 
     // Add a new Dog Owner with inputted dog and owner name
-    private func addDogOwner(ownerName: String, dogName: String, breed: String, contactInfo: String, address: String, tags: String, notes: String) {
+    private func addDogOwner(ownerName: String, dogName: String, breed: String, contactInfo: String, address: String) {
         withAnimation {
-            let newOwner = DogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, tags: tags, notes: notes)
+            let newOwner = DogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address)
             modelContext.insert(newOwner)
         }
     }
@@ -116,3 +115,4 @@ struct ContentView: View {
         }
     }
 }
+
