@@ -7,9 +7,11 @@ struct OwnerProfileView: View {
     @State private var selectedItem: PhotosPickerItem? // This will hold the selected photo item
     @State private var selectedImageData: Data? // To store selected image data for update
     @State private var isImagePickerPresented = false // To manage photo picker sheet presentation
+    @State private var notes: String // To store notes for the dog owner
 
     init(dogOwner: DogOwner) {
         self._dogOwner = State(initialValue: dogOwner)
+        self._notes = State(initialValue: dogOwner.notes ?? "") // Initialize with current notes or an empty string
     }
 
     var body: some View {
@@ -55,6 +57,21 @@ struct OwnerProfileView: View {
                 .font(.subheadline)
 
             Divider()
+            
+            // Notes Section
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Notes:")
+                    .font(.headline)
+                TextEditor(text: $notes)
+                    .frame(height: 150)
+                    .padding(8)
+                    .background(Color(UIColor.systemGray6))
+                    .cornerRadius(8)
+                    .border(Color.gray, width: 1)
+                    .padding(.bottom, 16)
+            }
+
+            Divider()
             Text("Appointment Schedule")
                 .font(.headline)
             List(dogOwner.appointments) { appointment in
@@ -90,6 +107,10 @@ struct OwnerProfileView: View {
                         }
                     }
                 }
+        }
+        .onChange(of: notes) { newNotes in
+            dogOwner.notes = newNotes // Save the updated notes directly in the dog owner object
+            saveChanges() // To save the updated model
         }
     }
 
