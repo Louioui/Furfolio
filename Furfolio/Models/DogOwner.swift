@@ -16,15 +16,19 @@ final class DogOwner {
     let address: String
     var chargeHistory: [Charge] = []
     var appointments: [Appointment] = []
-    var notes: String = "" // New notes property for storing notes
+    
+    // Image stored as Data (binary format)
+    var dogImage: Data? // This stores the image in binary format
 
-    init(ownerName: String, dogName: String, breed: String, contactInfo: String, address: String) {
+    init(ownerName: String, dogName: String, breed: String, contactInfo: String, address: String, dogImage: Data? = nil) {
         self.ownerName = ownerName
         self.dogName = dogName
         self.breed = breed
         self.contactInfo = contactInfo
         self.address = address
+        self.dogImage = dogImage
     }
 }
+
 
 

@@ -5,6 +5,7 @@
 //  Created by mac on 11/18/24.
 //
 
+// ContentView.swift
 import SwiftUI
 import SwiftData
 import UserNotifications
@@ -85,8 +86,8 @@ struct ContentView: View {
                 }
             }
             .sheet(isPresented: $isShowingAddOwnerSheet) {
-                AddDogOwnerView { ownerName, dogName, breed, contactInfo, address in
-                    addDogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address)
+                AddDogOwnerView { ownerName, dogName, breed, contactInfo, address, selectedImageData in
+                    addDogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, selectedImageData: selectedImageData)
                 }
             }
         } detail: {
@@ -98,10 +99,10 @@ struct ContentView: View {
         }
     }
 
-    // Add a new Dog Owner with inputted dog and owner name
-    private func addDogOwner(ownerName: String, dogName: String, breed: String, contactInfo: String, address: String) {
+    // Add a new Dog Owner with inputted dog and owner name and image data
+    private func addDogOwner(ownerName: String, dogName: String, breed: String, contactInfo: String, address: String, selectedImageData: Data?) {
         withAnimation {
-            let newOwner = DogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address)
+            let newOwner = DogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, dogImage: selectedImageData)
             modelContext.insert(newOwner)
         }
     }
@@ -115,4 +116,3 @@ struct ContentView: View {
         }
     }
 }
-

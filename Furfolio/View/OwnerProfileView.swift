@@ -1,26 +1,48 @@
-//
-//  OwnerProfileView.swift
-//  Furfolio
-//
-//  Created by mac on 11/18/24.
-//
-
-
 import SwiftUI
+import PhotosUI
 
 struct OwnerProfileView: View {
     @Environment(\.modelContext) private var modelContext
-    @State var dogOwner: DogOwner
-    @State private var editedNotes: String // To track the edited note
-    
-    // Initialize with the dog's existing notes
+    @State private var dogOwner: DogOwner
+    @State private var selectedItem: PhotosPickerItem? // This will hold the selected photo item
+    @State private var selectedImageData: Data? // To store selected image data for update
+    @State private var isImagePickerPresented = false // To manage photo picker sheet presentation
+
     init(dogOwner: DogOwner) {
         self._dogOwner = State(initialValue: dogOwner)
-        self._editedNotes = State(initialValue: dogOwner.notes) // Initialize the notes for editing
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            // Display the image if available
+            if let dogImage = dogOwner.dogImage, let uiImage = UIImage(data: dogImage) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 100, height: 100)
+                    .clipShape(Circle())
+            } else {
+                // Default image if no image is provided
+                Image(systemName: "photo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 100, height: 100)
+                    .clipShape(Circle())
+            }
+            
+            HStack {
+                Button("Delete Image") {
+                    removeImage()
+                }
+                .foregroundColor(.red)
+                
+                Button("Update Image") {
+                    // Toggle photo picker presentation
+                    isImagePickerPresented.toggle()
+                }
+                .foregroundColor(.blue)
+            }
+
             Text("Owner Name: \(dogOwner.ownerName)")
                 .font(.title2)
             Text("Dog Name: \(dogOwner.dogName)")
@@ -33,41 +55,6 @@ struct OwnerProfileView: View {
                 .font(.subheadline)
 
             Divider()
-
-            // Editable Notes Section
-            Section(header: Text("Notes")) {
-                TextEditor(text: $editedNotes)
-                    .frame(height: 150)
-                    .padding()
-                    .background(Color(UIColor.secondarySystemBackground))
-                    .cornerRadius(8)
-                    .border(Color.gray, width: 1)
-                    .padding(.bottom)
-
-                HStack {
-                    Button("Save Notes") {
-                        // Save changes to the dog owner's notes
-                        dogOwner.notes = editedNotes
-                        saveChanges()
-                    }
-                    .padding(.top)
-
-                    Spacer()
-
-                    // Add a button to clear the notes
-                    Button("Clear Notes") {
-                        // If the user wants to clear the notes
-                        editedNotes = "" // Reset the notes text
-                        dogOwner.notes = "" // Clear the note from the model
-                        saveChanges()
-                    }
-                    .foregroundColor(.red)
-                    .padding(.top)
-                }
-            }
-
-            Divider()
-
             Text("Appointment Schedule")
                 .font(.headline)
             List(dogOwner.appointments) { appointment in
@@ -86,15 +73,40 @@ struct OwnerProfileView: View {
         .cornerRadius(10)
         .shadow(radius: 5)
         .navigationTitle("\(dogOwner.ownerName)'s Profile")
-    }
-
-    private func saveChanges() {
-        do {
-            try modelContext.save() // Save the updated dog owner with the new notes
-        } catch {
-            // Handle the error (for example, show an alert or log the error)
-            print("Failed to save changes: \(error.localizedDescription)")
+        .sheet(isPresented: $isImagePickerPresented) {
+            PhotosPicker(
+                selection: $selectedItem, // Binding to track the selected photo item
+                matching: .images, // Filter to only images
+                photoLibrary: .shared()) {
+                    Text("Select Dog Image")
+                }
+                .onChange(of: selectedItem) { newItem in
+                    Task {
+                        // Retrieve the selected photo asset's data
+                        guard let selectedItem else { return }
+                        if let data = try? await selectedItem.loadTransferable(type: Data.self) {
+                            selectedImageData = data // Save the image data
+                            updateImage(with: selectedImageData!)
+                        }
+                    }
+                }
         }
     }
 
+    private func removeImage() {
+        dogOwner.dogImage = nil
+        saveChanges() // To save the updated model
+    }
+
+    private func updateImage(with newImageData: Data) {
+        dogOwner.dogImage = newImageData
+        saveChanges() // To save the updated model
+    }
+
+    private func saveChanges() {
+        withAnimation {
+            try? modelContext.save() // Save changes to the context
+        }
+    }
 }
+
