@@ -5,7 +5,6 @@
 //  Created by mac on 11/18/24.
 //
 
-// ContentView.swift
 import SwiftUI
 import SwiftData
 import UserNotifications
@@ -14,10 +13,10 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var dogOwners: [DogOwner]
 
-    // For the search functionality
+    // Search functionality
     @State private var searchText = ""
     
-    // State variable to show input sheet
+    // Sheet toggles
     @State private var isShowingAddOwnerSheet = false
     
     // State for selected dog owner
@@ -25,80 +24,70 @@ struct ContentView: View {
 
     var body: some View {
         NavigationSplitView {
-            // Main List View
+            // Sidebar List View
             List {
                 // Upcoming Appointments Section
                 Section(header: Text("Upcoming Appointments")) {
-                    ForEach(dogOwners.filter { dogOwner in
+                    let upcomingAppointments = dogOwners.filter { dogOwner in
                         dogOwner.appointments.contains { appointment in
                             let today = Calendar.current.startOfDay(for: Date())
                             return appointment.date > today && appointment.date < today.addingTimeInterval(7 * 24 * 60 * 60)
                         }
-                    }) { dogOwner in
-                        NavigationLink {
-                            OwnerProfileView(dogOwner: dogOwner)
-                        } label: {
-                            HStack {
-                                Text(dogOwner.ownerName)
-                                    .font(.headline)
-                                Text("Next Appointment: \(dogOwner.appointments.first?.date.formatted(.dateTime.month().day().year().hour().minute()) ?? "N/A")")
-                                    .font(.subheadline)
-                                    .foregroundColor(.gray)
+                    }
+                    
+                    if upcomingAppointments.isEmpty {
+                        Text("No upcoming appointments.")
+                            .foregroundColor(.gray)
+                            .italic()
+                    } else {
+                        ForEach(upcomingAppointments) { dogOwner in
+                            if let nextAppointment = dogOwner.appointments.sorted(by: { $0.date < $1.date }).first {
+                                NavigationLink {
+                                    OwnerProfileView(dogOwner: dogOwner)
+                                } label: {
+                                    VStack(alignment: .leading) {
+                                        Text(dogOwner.ownerName)
+                                            .font(.headline)
+                                        Text("Next Appointment: \(nextAppointment.date.formatted(.dateTime.month().day().year().hour().minute()))")
+                                            .font(.subheadline)
+                                            .foregroundColor(.gray)
+                                    }
+                                }
                             }
                         }
                     }
                 }
 
-                // Main Dog Owners Section
+                // Dog Owners Section
                 Section(header: Text("Dog Owners")) {
-                    ForEach(dogOwners.filter { owner in
-                        // Filter dog owners based on search text
-                        searchText.isEmpty || owner.ownerName.localizedCaseInsensitiveContains(searchText) || owner.dogName.localizedCaseInsensitiveContains(searchText)
-                    }) { dogOwner in
-                        NavigationLink {
-                            OwnerProfileView(dogOwner: dogOwner)
-                        } label: {
-                            HStack {
-                                // Display image if available, otherwise show a placeholder
-                                if let dogImage = dogOwner.dogImage, let uiImage = UIImage(data: dogImage) {
-                                    Image(uiImage: uiImage)
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 50, height: 50)
-                                        .clipShape(Circle())
-                                        .overlay(Circle().stroke(Color.gray, lineWidth: 1))
-                                } else {
-                                    Image(systemName: "person.circle.fill")
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 50, height: 50)
-                                        .foregroundColor(.gray)
-                                }
+                    let filteredDogOwners = dogOwners.filter { owner in
+                        searchText.isEmpty ||
+                        owner.ownerName.localizedCaseInsensitiveContains(searchText) ||
+                        owner.dogName.localizedCaseInsensitiveContains(searchText)
+                    }
 
-                                VStack(alignment: .leading) {
-                                    Text(dogOwner.ownerName)
-                                        .font(.headline)
-                                    Text(dogOwner.dogName)
-                                        .font(.subheadline)
-                                        .foregroundColor(.gray)
-                                    Text("(\(dogOwner.breed))") // Display breed in the list
-                                        .font(.subheadline)
-                                        .foregroundColor(.blue)
-                                }
+                    if filteredDogOwners.isEmpty {
+                        Text("No dog owners found.")
+                            .foregroundColor(.gray)
+                            .italic()
+                    } else {
+                        ForEach(filteredDogOwners) { dogOwner in
+                            NavigationLink {
+                                OwnerProfileView(dogOwner: dogOwner)
+                            } label: {
+                                DogOwnerRowView(dogOwner: dogOwner)
                             }
                         }
+                        .onDelete(perform: deleteDogOwners)
                     }
-                    .onDelete(perform: deleteDogOwners) // Correct place for onDelete
                 }
             }
-            .navigationTitle("Dog Owners")
-            .searchable(text: $searchText) // Search bar at the top
+            .navigationTitle("Furfolio")
+            .searchable(text: $searchText)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    // "+" button to add new Dog Owner
-                    Button(action: {
-                        isShowingAddOwnerSheet = true
-                    }) {
+                    // "+" button to add a new Dog Owner
+                    Button(action: { isShowingAddOwnerSheet = true }) {
                         Label("Add Dog Owner", systemImage: "plus")
                     }
                 }
@@ -112,12 +101,14 @@ struct ContentView: View {
             if let selectedDogOwner = selectedDogOwner {
                 OwnerProfileView(dogOwner: selectedDogOwner)
             } else {
-                Text("Select a dog owner to view charge history.")
+                Text("Select a dog owner to view details.")
             }
         }
     }
 
-    // Add a new Dog Owner with inputted dog and owner name and image data
+    // MARK: - Functions
+
+    /// Adds a new Dog Owner with all details and optional image
     private func addDogOwner(ownerName: String, dogName: String, breed: String, contactInfo: String, address: String, selectedImageData: Data?) {
         withAnimation {
             let newOwner = DogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, dogImage: selectedImageData)
@@ -125,7 +116,7 @@ struct ContentView: View {
         }
     }
 
-    // Delete Dog Owner
+    /// Deletes selected Dog Owners
     private func deleteDogOwners(offsets: IndexSet) {
         withAnimation {
             for index in offsets {
@@ -134,3 +125,39 @@ struct ContentView: View {
         }
     }
 }
+
+// MARK: - DogOwnerRowView
+struct DogOwnerRowView: View {
+    let dogOwner: DogOwner
+
+    var body: some View {
+        HStack {
+            if let dogImage = dogOwner.dogImage, let uiImage = UIImage(data: dogImage) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 50, height: 50)
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(Color.gray, lineWidth: 1))
+            } else {
+                Image(systemName: "person.circle.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 50, height: 50)
+                    .foregroundColor(.gray)
+            }
+
+            VStack(alignment: .leading) {
+                Text(dogOwner.ownerName)
+                    .font(.headline)
+                Text(dogOwner.dogName)
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+                Text("(\(dogOwner.breed))")
+                    .font(.subheadline)
+                    .foregroundColor(.blue)
+            }
+        }
+    }
+}
+

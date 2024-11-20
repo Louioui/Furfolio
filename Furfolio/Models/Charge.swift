@@ -9,20 +9,18 @@ import Foundation
 import SwiftData
 
 @Model
-final class Charge {
-    let chargeDate: Date
-    let chargeAmount: Double
-    let isPaid: Bool
-    let paymentMethod: String
-    let serviceType: String // Add service type for revenue tracking
+final class Charge: Identifiable {
+    @Attribute(.unique) var id: UUID
+    var date: Date
+    var type: String // "Basic Package" or "Full Package"
+    var amount: Double
+    var dogOwner: DogOwner
 
-    init(chargeDate: Date, chargeAmount: Double, serviceType: String, isPaid: Bool = false, paymentMethod: String = "") {
-        self.chargeDate = chargeDate
-        self.chargeAmount = chargeAmount
-        self.isPaid = isPaid
-        self.paymentMethod = paymentMethod
-        self.serviceType = serviceType // Initialize service type
+    init(date: Date, type: String, amount: Double, dogOwner: DogOwner) {
+        self.id = UUID()
+        self.date = date
+        self.type = type
+        self.amount = amount
+        self.dogOwner = dogOwner
     }
 }
-
-

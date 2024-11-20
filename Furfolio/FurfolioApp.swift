@@ -4,60 +4,69 @@
 //
 //  Created by mac on 11/18/24.
 //
+//
+
 
 import SwiftUI
 import SwiftData
 import UserNotifications
 
 @main
-struct demoApp: App {
-   // Correcting the ModelContainer initialization
-   var sharedModelContainer: ModelContainer = {
-       do {
-           // Ensure the models are being included in the schema correctly
-           let schema = try Schema([DogOwner.self, Charge.self, Appointment.self])
-           let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-           
-           return try ModelContainer(for: schema, configurations: [modelConfiguration])
-       } catch {
-           fatalError("Could not create ModelContainer: \(error)")
-       }
-   }()
+struct FurfolioApp: App {
+    // Shared model container for managing app data
+    private var sharedModelContainer: ModelContainer = {
+        do {
+            let schema = try Schema([DogOwner.self, Charge.self, Appointment.self])
+            return try ModelContainer(for: schema)
+        } catch {
+            fatalError("Failed to initialize ModelContainer: \(error)")
+        }
+    }()
 
-   // Request notification permission when the app starts
-   init() {
-       UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
-           if let error = error {
-               print("Notification permission request failed: \(error.localizedDescription)")
-           } else if granted {
-               print("Notification permission granted.")
-           } else {
-               print("Notification permission denied.")
-           }
-       }
-       
-       // Set the delegate to handle notifications
-       UNUserNotificationCenter.current().delegate = NotificationDelegate()
-   }
+    init() {
+        // Request notification permissions
+        requestNotificationPermissions()
+        // Set notification delegate
+        UNUserNotificationCenter.current().delegate = NotificationDelegate()
+    }
 
-   var body: some Scene {
-       WindowGroup {
-           ContentView()
-               .modelContainer(sharedModelContainer) // Ensure the model container is applied here
-       }
-   }
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+                .modelContainer(sharedModelContainer) // Attach model container to the app's views
+        }
+    }
+
+    /// Request notification permissions with error handling
+    private func requestNotificationPermissions() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
+            if let error = error {
+                print("Notification permission request failed: \(error.localizedDescription)")
+            } else {
+                print(granted ? "Notification permission granted." : "Notification permission denied.")
+            }
+        }
+    }
 }
 
-// Notification Delegate to handle foreground notifications
+// Notification Delegate to handle user notification events
 class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
-   func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-       // Present the notification even when the app is in the foreground
-       completionHandler([.alert, .sound])
-   }
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        // Present notifications while the app is in the foreground
+        completionHandler([.alert, .sound])
+    }
 
-   func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-       // Handle the notification action if needed
-       print("Notification received: \(response.notification.request.content.body)")
-       completionHandler()
-   }
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        // Handle user interaction with a notification
+        print("Notification received: \(response.notification.request.content.body)")
+        completionHandler()
+    }
 }
