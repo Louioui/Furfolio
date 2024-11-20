@@ -3,7 +3,6 @@
 //  Furfolio
 //
 //  Created by mac on 11/18/24.
-//
 
 import SwiftUI
 import SwiftData
@@ -18,6 +17,7 @@ struct ContentView: View {
     
     // Sheet toggles
     @State private var isShowingAddOwnerSheet = false
+    @State private var isShowingMetricsView = false // NEW
     
     // State for selected dog owner
     @State private var selectedDogOwner: DogOwner?
@@ -26,6 +26,15 @@ struct ContentView: View {
         NavigationSplitView {
             // Sidebar List View
             List {
+                // Metrics Section - NEW
+                Section(header: Text("Business Insights")) {
+                    Button(action: {
+                        isShowingMetricsView = true
+                    }) {
+                        Label("View Metrics Dashboard", systemImage: "chart.bar.xaxis")
+                    }
+                }
+                
                 // Upcoming Appointments Section
                 Section(header: Text("Upcoming Appointments")) {
                     let upcomingAppointments = dogOwners.filter { dogOwner in
@@ -97,6 +106,9 @@ struct ContentView: View {
                     addDogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, selectedImageData: selectedImageData)
                 }
             }
+            .sheet(isPresented: $isShowingMetricsView) { // NEW
+                MetricsDashboardView(dogOwners: dogOwners)
+            }
         } detail: {
             if let selectedDogOwner = selectedDogOwner {
                 OwnerProfileView(dogOwner: selectedDogOwner)
@@ -125,39 +137,3 @@ struct ContentView: View {
         }
     }
 }
-
-// MARK: - DogOwnerRowView
-struct DogOwnerRowView: View {
-    let dogOwner: DogOwner
-
-    var body: some View {
-        HStack {
-            if let dogImage = dogOwner.dogImage, let uiImage = UIImage(data: dogImage) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 50, height: 50)
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(Color.gray, lineWidth: 1))
-            } else {
-                Image(systemName: "person.circle.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 50, height: 50)
-                    .foregroundColor(.gray)
-            }
-
-            VStack(alignment: .leading) {
-                Text(dogOwner.ownerName)
-                    .font(.headline)
-                Text(dogOwner.dogName)
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
-                Text("(\(dogOwner.breed))")
-                    .font(.subheadline)
-                    .foregroundColor(.blue)
-            }
-        }
-    }
-}
-

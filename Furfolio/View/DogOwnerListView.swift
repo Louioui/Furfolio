@@ -6,81 +6,107 @@
 //
 
 import SwiftUI
+import PhotosUI
 
-struct DogOwnerListView: View {
+
+struct OwnerProfileView: View {
     @Environment(\.modelContext) private var modelContext
-    @State private var dogOwners: [DogOwner] = [] // Assume this is populated from your data model
-    @State private var isAddDogOwnerViewPresented = false // To toggle the "Add Dog Owner" view
+    @State private var showNewAppointmentSheet = false
+    @State private var showNewChargeSheet = false
+
+    let dogOwner: DogOwner
 
     var body: some View {
-        NavigationView {
-            List {
-                ForEach(dogOwners) { dogOwner in
-                    HStack {
-                        // Dog image on the left
-                        if let dogImage = dogOwner.dogImage, let uiImage = UIImage(data: dogImage) {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 50, height: 50)
-                                .clipShape(Circle())
-                                .overlay(Circle().stroke(Color.gray, lineWidth: 1))
-                        } else {
-                            // Placeholder image
-                            Image(systemName: "person.circle.fill")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 50, height: 50)
-                                .foregroundColor(.gray)
-                        }
-
-                        // Dog owner details
-                        VStack(alignment: .leading) {
-                            Text(dogOwner.ownerName)
-                                .font(.headline)
-                            Text(dogOwner.dogName)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .padding(.vertical, 8)
+        ScrollView {
+            VStack(spacing: 20) {
+                // Dog Owner Image
+                if let dogImage = dogOwner.dogImage, let uiImage = UIImage(data: dogImage) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 150, height: 150)
+                        .clipShape(Circle())
+                        .overlay(Circle().stroke(Color.gray, lineWidth: 2))
+                } else {
+                    Image(systemName: "person.circle.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 150, height: 150)
+                        .foregroundColor(.gray)
                 }
-                .onDelete(perform: deleteDogOwner) // Enable swipe-to-delete functionality
-            }
-            .navigationTitle("Dog Owners")
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button(action: { isAddDogOwnerViewPresented = true }) {
-                        Label("Add Dog Owner", systemImage: "plus")
+
+                // Owner and Dog Info
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Owner: \(dogOwner.ownerName)")
+                        .font(.headline)
+                    Text("Contact: \(dogOwner.contactInfo)")
+                        .font(.subheadline)
+                    Text("Address: \(dogOwner.address)")
+                        .font(.subheadline)
+                    Text("Dog: \(dogOwner.dogName) (\(dogOwner.breed))")
+                        .font(.subheadline)
+                    if !dogOwner.notes.isEmpty {
+                        Text("Notes: \(dogOwner.notes)")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
                     }
                 }
-            }
-            .sheet(isPresented: $isAddDogOwnerViewPresented) {
-                AddDogOwnerView { ownerName, dogName, breed, contactInfo, address, imageData in
-                    addDogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, imageData: imageData)
+                .padding(.horizontal)
+
+                // Appointments Section
+                Section(header: Text("Appointments")) {
+                    if dogOwner.appointments.isEmpty {
+                        Text("No upcoming appointments.")
+                            .foregroundColor(.secondary)
+                    } else {
+                        ForEach(dogOwner.appointments) { appointment in
+                            HStack {
+                                Text(appointment.date, style: .date)
+                                Spacer()
+                                Text(appointment.date, style: .time)
+                            }
+                        }
+                    }
+                    Button("Add Appointment") {
+                        showNewAppointmentSheet = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+
+                // Charges Section
+                Section(header: Text("Charge History")) {
+                    if dogOwner.charges.isEmpty {
+                        Text("No charges recorded.")
+                            .foregroundColor(.secondary)
+                    } else {
+                        ForEach(dogOwner.charges) { charge in
+                            HStack {
+                                VStack(alignment: .leading) {
+                                    Text(charge.type)
+                                        .font(.headline)
+                                    Text(charge.date, style: .date)
+                                        .font(.subheadline)
+                                        .foregroundColor(.gray)
+                                }
+                                Spacer()
+                                Text("$\(charge.amount, specifier: "%.2f")")
+                                    .font(.headline)
+                            }
+                        }
+                    }
+                    Button("Add Charge") {
+                        showNewChargeSheet = true
+                    }
+                    .buttonStyle(.borderedProminent)
                 }
             }
+            .padding()
         }
-    }
-
-    // Add new dog owner to the list and save it
-    private func addDogOwner(ownerName: String, dogName: String, breed: String, contactInfo: String, address: String, imageData: Data?) {
-        let newDogOwner = DogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, dogImage: imageData)
-        dogOwners.append(newDogOwner)
-        print("New dog owner added with image data: \(imageData != nil ? "Exists" : "Missing")")
-        withAnimation {
-            try? modelContext.save() // Save changes to the database
+        .sheet(isPresented: $showNewAppointmentSheet) {
+            AddAppointmentView(dogOwner: dogOwner)
         }
-    }
-
-    // Delete a dog owner from the list
-    private func deleteDogOwner(at offsets: IndexSet) {
-        offsets.forEach { index in
-            let dogOwner = dogOwners[index]
-            modelContext.delete(dogOwner)
-        }
-        withAnimation {
-            try? modelContext.save() // Save changes to the database
+        .sheet(isPresented: $showNewChargeSheet) {
+            AddChargeView(dogOwner: dogOwner)
         }
     }
 }

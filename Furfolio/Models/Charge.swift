@@ -24,3 +24,4 @@ final class Charge: Identifiable {
         self.dogOwner = dogOwner
     }
 }
+
