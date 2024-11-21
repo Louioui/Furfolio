@@ -3,7 +3,6 @@
 //  Furfolio
 //
 //  Created by mac on 11/18/24.
-
 import SwiftUI
 import SwiftData
 import UserNotifications
@@ -93,47 +92,45 @@ struct ContentView: View {
             }
             .navigationTitle("Furfolio")
             .searchable(text: $searchText)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    // "+" button to add a new Dog Owner
-                    Button(action: { isShowingAddOwnerSheet = true }) {
-                        Label("Add Dog Owner", systemImage: "plus")
-                    }
-                }
-            }
-            .sheet(isPresented: $isShowingAddOwnerSheet) {
-                AddDogOwnerView { ownerName, dogName, breed, contactInfo, address, selectedImageData in
-                    addDogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, selectedImageData: selectedImageData)
-                }
-            }
-            .sheet(isPresented: $isShowingMetricsView) { // NEW
-                MetricsDashboardView(dogOwners: dogOwners)
-            }
         } detail: {
-            if let selectedDogOwner = selectedDogOwner {
-                OwnerProfileView(dogOwner: selectedDogOwner)
-            } else {
-                Text("Select a dog owner to view details.")
+            // Provide the Detail View content
+            Text("Select a dog owner to see details.")
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: { isShowingAddOwnerSheet = true }) {
+                    Label("Add Dog Owner", systemImage: "plus")
+                }
             }
+        }
+        .sheet(isPresented: $isShowingAddOwnerSheet) {
+            AddDogOwnerView { ownerName, dogName, breed, contactInfo, address, selectedImageData in
+                addDogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, selectedImageData: selectedImageData)
+            }
+        }
+        .sheet(isPresented: $isShowingMetricsView) {
+            MetricsDashboardView(dogOwners: dogOwners)
         }
     }
 
-    // MARK: - Functions
-
-    /// Adds a new Dog Owner with all details and optional image
     private func addDogOwner(ownerName: String, dogName: String, breed: String, contactInfo: String, address: String, selectedImageData: Data?) {
-        withAnimation {
-            let newOwner = DogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, dogImage: selectedImageData)
-            modelContext.insert(newOwner)
-        }
+        let newOwner = DogOwner(
+            ownerName: ownerName,
+            dogName: dogName,
+            breed: breed,
+            contactInfo: contactInfo,
+            address: address,
+            dogImage: selectedImageData
+        )
+        try? modelContext.save()
     }
 
-    /// Deletes selected Dog Owners
-    private func deleteDogOwners(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(dogOwners[index])
-            }
+    private func deleteDogOwners(at offsets: IndexSet) {
+        for index in offsets {
+            let ownerToDelete = dogOwners[index]
+            modelContext.delete(ownerToDelete)
         }
+        try? modelContext.save()
     }
 }
+

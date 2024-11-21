@@ -106,5 +106,3 @@ let appointmentDateFormatter: DateFormatter = {
     formatter.timeStyle = .short
     return formatter
 }()
-
-
