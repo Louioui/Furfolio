@@ -30,6 +30,9 @@ struct AddChargeView: View {
 
                     TextField("Amount Charged", value: $chargeAmount, formatter: NumberFormatter.currency)
                         .keyboardType(.decimalPad)
+                        .onChange(of: chargeAmount) { newValue in
+                            chargeAmount = max(newValue, 0.0)  // Ensure chargeAmount is non-negative
+                        }
 
                     TextField("Additional Notes", text: $chargeNotes)
                 } header: {
@@ -48,7 +51,7 @@ struct AddChargeView: View {
                         saveChargeHistory()  // Save the charge details
                         dismiss()
                     }
-                    .disabled(chargeAmount <= 0.0)  // Disable save if amount is zero
+                    .disabled(chargeAmount <= 0.0)  // Disable save if charge amount is zero or negative
                 }
             }
         }
@@ -57,8 +60,8 @@ struct AddChargeView: View {
     private func saveChargeHistory() {
         // Create a new charge entry with the input details
         let newCharge = Charge(date: Date(), type: serviceType, amount: chargeAmount, dogOwner: dogOwner)
-        dogOwner.charges.append(newCharge)  // Append the new charge to the dog owner's history
-        modelContext.insert(newCharge)  // Save the new charge entry to the database
+        modelContext.insert(newCharge)  // Insert the charge into the database
+        dogOwner.charges.append(newCharge)  // Optionally append locally to dogOwner for UI update
     }
 }
 

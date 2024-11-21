@@ -36,15 +36,15 @@ struct AddAppointmentView: View {
                         saveAppointment()
                         dismiss()
                     }
-                    .disabled(appointmentDate < Date())
+                    .disabled(appointmentDate < Date())  // Disable if the appointment is in the past
                 }
             }
         }
     }
 
     private func saveAppointment() {
-        let newAppointment = Appointment(date: appointmentDate, dogOwner: dogOwner) // Fix: Passing dogOwner, not notes
-        dogOwner.appointments.append(newAppointment)
-        modelContext.insert(newAppointment)
+        let newAppointment = Appointment(date: appointmentDate, dogOwner: dogOwner)
+        modelContext.insert(newAppointment)  // Insert appointment into the database
+        dogOwner.appointments.append(newAppointment)  // Optionally append to dogOwner for UI update
     }
 }
