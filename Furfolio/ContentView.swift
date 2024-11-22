@@ -5,10 +5,7 @@
 //  Created by mac on 11/18/24.
 //
 //
-//  ContentView.swift
-//  Furfolio
-//
-//  Created by mac on 11/18/24.
+
 
 import SwiftUI
 import SwiftData
@@ -16,8 +13,9 @@ import UserNotifications
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var dogOwners: [DogOwner]
-
+    @Query(FetchDescriptor<DogOwner>()) private var dogOwners: [DogOwner]
+    @Query(FetchDescriptor<DailyRevenue>()) private var dailyRevenues: [DailyRevenue] // Corrected query
+    
     // Search functionality
     @State private var searchText = ""
     
@@ -31,6 +29,12 @@ struct ContentView: View {
     // State for error handling
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
+    
+    // To keep track of the total revenue today
+    @State private var totalRevenueToday: Double = 0.0
+    
+    // Date check for daily revenue reset
+    @State private var lastCheckedDate: Date = Date()
 
     var body: some View {
         NavigationSplitView {
@@ -113,11 +117,17 @@ struct ContentView: View {
             }
             .sheet(isPresented: $isShowingAddOwnerSheet) {
                 AddDogOwnerView { ownerName, dogName, breed, contactInfo, address, selectedImageData in
-                    addDogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, selectedImageData: selectedImageData)
+                    do {
+                        try addDogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, selectedImageData: selectedImageData)
+                    } catch {
+                        errorMessage = error.localizedDescription
+                        showErrorAlert = true
+                    }
                 }
             }
             .sheet(isPresented: $isShowingMetricsView) {
-                MetricsDashboardView(dogOwners: dogOwners)
+                // Pass dogOwners and dailyRevenues directly to MetricsDashboardView
+                MetricsDashboardView(dogOwners: dogOwners, dailyRevenues: dailyRevenues)
             }
             .alert(isPresented: $showErrorAlert) {
                 Alert(title: Text("Error"), message: Text(errorMessage), dismissButton: .default(Text("OK")))
@@ -129,32 +139,55 @@ struct ContentView: View {
                 Text("Select a dog owner to view details.")
             }
         }
+        .onAppear {
+            checkForNewDayAndResetRevenue()
+        }
     }
 
     // MARK: - Functions
 
-    private func addDogOwner(ownerName: String, dogName: String, breed: String, contactInfo: String, address: String, selectedImageData: Data?) {
+    // Marked this function as 'throws' because 'modelContext.save()' can throw an error.
+    private func addDogOwner(ownerName: String, dogName: String, breed: String, contactInfo: String, address: String, selectedImageData: Data?) throws {
         do {
-            withAnimation {
-                let newOwner = DogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, dogImage: selectedImageData)
+            // Wrapping 'withAnimation' and 'modelContext.save()' in a single 'do-catch' block
+            try withAnimation {
+                // Create a new DogOwner instance with the provided details
+                let newOwner = DogOwner(
+                    ownerName: ownerName,
+                    dogName: dogName,
+                    breed: breed,
+                    contactInfo: contactInfo,
+                    address: address,
+                    dogImage: selectedImageData, // Use dogImage instead of image
+                    notes: "" // Optionally set a default value for notes
+                )
+                
+                // Insert the new DogOwner into the model context
                 modelContext.insert(newOwner)
+                
+                // Save the changes to the context (this can throw, so we use 'try')
+                try modelContext.save()
             }
         } catch {
-            errorMessage = "Failed to add dog owner. Please try again."
-            showErrorAlert = true
+            // Handle any errors during the save process
+            throw error // Rethrow the error so the caller can handle it
         }
     }
 
-    private func deleteDogOwners(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                do {
-                    modelContext.delete(dogOwners[index])
-                } catch {
-                    errorMessage = "Failed to delete dog owner. Please try again."
-                    showErrorAlert = true
-                }
-            }
+    private func deleteDogOwners(at offsets: IndexSet) {
+        offsets.forEach { index in
+            let dogOwner = dogOwners[index]
+            modelContext.delete(dogOwner)
+        }
+        try? modelContext.save()
+    }
+    
+    private func checkForNewDayAndResetRevenue() {
+        let currentDate = Date()
+        if !Calendar.current.isDate(lastCheckedDate, inSameDayAs: currentDate) {
+            lastCheckedDate = currentDate
+            // Reset total revenue at the start of a new day
+            totalRevenueToday = 0.0
         }
     }
 }

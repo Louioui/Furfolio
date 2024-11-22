@@ -18,8 +18,8 @@ final class DogOwner: Identifiable {
     var address: String
     var dogImage: Data? // Storing dog image
     var notes: String
-    var appointments: [Appointment] = []
-    var charges: [Charge] = []
+    var appointments: [Appointment] = [] // Relationship to Appointment model
+    var charges: [Charge] = [] // Relationship to Charge model
 
     init(
         ownerName: String,
@@ -28,7 +28,9 @@ final class DogOwner: Identifiable {
         contactInfo: String,
         address: String,
         dogImage: Data? = nil,
-        notes: String = ""
+        notes: String = "",
+        appointments: [Appointment] = [],
+        charges: [Charge] = []
     ) {
         self.id = UUID()
         self.ownerName = ownerName
@@ -38,6 +40,8 @@ final class DogOwner: Identifiable {
         self.address = address
         self.dogImage = dogImage
         self.notes = notes
+        self.appointments = appointments
+        self.charges = charges
     }
 
     // Computed property to check if the owner has upcoming appointments
@@ -49,5 +53,24 @@ final class DogOwner: Identifiable {
     // Computed property to get the next appointment
     var nextAppointment: Appointment? {
         return appointments.filter { $0.date > Date() }.sorted { $0.date < $1.date }.first
+    }
+
+    // Computed property to get the total charges for the owner
+    var totalCharges: Double {
+        return charges.reduce(0) { $0 + $1.amount }
+    }
+
+    // Computed property to count the number of charges (useful for frequent customers)
+    var chargeCount: Int {
+        return charges.count
+    }
+
+    // Helper method to get a list of services and their counts
+    var popularServices: [String: Int] {
+        var serviceCounts: [String: Int] = [:]
+        charges.forEach { charge in
+            serviceCounts[charge.type, default: 0] += 1
+        }
+        return serviceCounts
     }
 }

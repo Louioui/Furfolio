@@ -5,24 +5,35 @@
 //  Created by mac on 11/20/24.
 //
 import SwiftUI
+import _SwiftData_SwiftUI
 
 struct MetricsDashboardView: View {
     let dogOwners: [DogOwner]
-
-    // Total revenue calculation
-    var totalRevenue: Double {
-        dogOwners.flatMap { $0.charges }.reduce(0) { $0 + $1.amount }
+    let dailyRevenues: [DailyRevenue] // This is passed from ContentView
+    
+    // Total revenue calculation for today
+    var totalRevenueToday: Double {
+        let todayStart = Calendar.current.startOfDay(for: Date())
+        return dailyRevenues.first(where: { Calendar.current.isDate($0.date, inSameDayAs: todayStart) })?.amount ?? 0.0
     }
 
-    // Most frequent customers calculation based on number of charges
+    // Total revenue calculation for the current month
+    var totalRevenueThisMonth: Double {
+        let currentMonthStart = Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: Date()))!
+        return dailyRevenues.filter { $0.date >= currentMonthStart }
+                             .reduce(0) { $0 + $1.amount }
+    }
+
+    // Most frequent customers based on the number of charges
     var mostFrequentCustomers: [DogOwner] {
         dogOwners.sorted { $0.charges.count > $1.charges.count }.prefix(3).map { $0 }
     }
 
-    // Popular services calculation (counting how often each service was performed)
+    // Popular services based on the count of each service type performed
     var popularServices: [String: Int] {
         var serviceCounts: [String: Int] = [:]
-        dogOwners.flatMap { $0.charges }.forEach { charge in
+        let allCharges = dogOwners.flatMap { $0.charges } // Collect all charges
+        allCharges.forEach { charge in
             serviceCounts[charge.type, default: 0] += 1
         }
         return serviceCounts
@@ -35,11 +46,17 @@ struct MetricsDashboardView: View {
         var upcoming = 0
         let now = Date()
 
-        dogOwners.flatMap { $0.appointments }.forEach { appointment in
+        let allAppointments = dogOwners.flatMap { $0.appointments } // Collect all appointments
+        allAppointments.forEach { appointment in
             if appointment.date < now {
                 completed += 1
             } else {
                 upcoming += 1
+            }
+
+            // Assuming you have a way to mark appointments as canceled
+            if appointment.isCanceled {
+                canceled += 1
             }
         }
         return (completed, canceled, upcoming)
@@ -48,9 +65,14 @@ struct MetricsDashboardView: View {
     var body: some View {
         NavigationView {
             List {
-                // Total Revenue
-                Section(header: Text("Total Revenue")) {
-                    Text("Total Revenue: $\(totalRevenue, specifier: "%.2f")")
+                // Total Revenue Today
+                Section(header: Text("Total Revenue Today")) {
+                    Text("Total Revenue: $\(totalRevenueToday, specifier: "%.2f")")
+                }
+
+                // Total Revenue This Month
+                Section(header: Text("Total Revenue This Month")) {
+                    Text("Total Revenue: $\(totalRevenueThisMonth, specifier: "%.2f")")
                 }
 
                 // Most Frequent Customers
@@ -78,10 +100,11 @@ struct MetricsDashboardView: View {
                 // Appointment Statistics
                 Section(header: Text("Appointment Statistics")) {
                     Text("Completed: \(appointmentStats.completed)")
+                    Text("Canceled: \(appointmentStats.canceled)")
                     Text("Upcoming: \(appointmentStats.upcoming)")
                 }
 
-                // Next Appointment for each Dog Owner
+                // Upcoming Appointments
                 Section(header: Text("Upcoming Appointments")) {
                     ForEach(dogOwners) { owner in
                         if let nextAppointment = owner.nextAppointment {

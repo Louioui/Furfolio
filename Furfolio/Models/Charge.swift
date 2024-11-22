@@ -12,11 +12,11 @@ import SwiftData
 final class Charge: Identifiable {
     @Attribute(.unique) var id: UUID
     var date: Date
-    var type: String
+    var type: String  // Type of service
     var amount: Double
     var dogOwner: DogOwner
     var notes: String
-
+    
     init(date: Date, type: String, amount: Double, dogOwner: DogOwner, notes: String = "") {
         self.id = UUID()
         self.date = date
