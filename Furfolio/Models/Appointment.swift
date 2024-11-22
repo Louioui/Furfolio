@@ -19,4 +19,3 @@ final class Appointment: Identifiable {
         self.dogOwner = dogOwner
     }
 }
-

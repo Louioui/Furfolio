@@ -23,16 +23,20 @@ struct ContentView: View {
     
     // Sheet toggles
     @State private var isShowingAddOwnerSheet = false
-    @State private var isShowingMetricsView = false // NEW
+    @State private var isShowingMetricsView = false
     
     // State for selected dog owner
     @State private var selectedDogOwner: DogOwner?
+    
+    // State for error handling
+    @State private var showErrorAlert = false
+    @State private var errorMessage = ""
 
     var body: some View {
         NavigationSplitView {
             // Sidebar List View
             List {
-                // Metrics Section - NEW
+                // Metrics Section
                 Section(header: Text("Business Insights")) {
                     Button(action: {
                         isShowingMetricsView = true
@@ -112,8 +116,11 @@ struct ContentView: View {
                     addDogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, selectedImageData: selectedImageData)
                 }
             }
-            .sheet(isPresented: $isShowingMetricsView) { // NEW
+            .sheet(isPresented: $isShowingMetricsView) {
                 MetricsDashboardView(dogOwners: dogOwners)
+            }
+            .alert(isPresented: $showErrorAlert) {
+                Alert(title: Text("Error"), message: Text(errorMessage), dismissButton: .default(Text("OK")))
             }
         } detail: {
             if let selectedDogOwner = selectedDogOwner {
@@ -126,20 +133,29 @@ struct ContentView: View {
 
     // MARK: - Functions
 
-    /// Adds a new Dog Owner with all details and optional image
     private func addDogOwner(ownerName: String, dogName: String, breed: String, contactInfo: String, address: String, selectedImageData: Data?) {
-        withAnimation {
-            let newOwner = DogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, dogImage: selectedImageData)
-            modelContext.insert(newOwner)
+        do {
+            withAnimation {
+                let newOwner = DogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, dogImage: selectedImageData)
+                modelContext.insert(newOwner)
+            }
+        } catch {
+            errorMessage = "Failed to add dog owner. Please try again."
+            showErrorAlert = true
         }
     }
 
-    /// Deletes selected Dog Owners
     private func deleteDogOwners(offsets: IndexSet) {
         withAnimation {
             for index in offsets {
-                modelContext.delete(dogOwners[index])
+                do {
+                    modelContext.delete(dogOwners[index])
+                } catch {
+                    errorMessage = "Failed to delete dog owner. Please try again."
+                    showErrorAlert = true
+                }
             }
         }
     }
 }
+

@@ -19,7 +19,6 @@ struct AddChargeView: View {
     var body: some View {
         NavigationView {
             Form {
-                // Correctly structured Section
                 Section {
                     Picker("Service Type", selection: $serviceType) {
                         ForEach(serviceTypes, id: \.self) { type in
@@ -36,7 +35,7 @@ struct AddChargeView: View {
 
                     TextField("Additional Notes", text: $chargeNotes)
                 } header: {
-                    Text("Charge Information")  // This is now correct with a closure for header
+                    Text("Charge Information")
                 }
             }
             .navigationTitle("Input Charge Details")
