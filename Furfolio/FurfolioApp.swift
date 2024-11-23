@@ -21,16 +21,14 @@ struct FurfolioApp: App {
     }()
 
     init() {
-        // Request notification permissions
         requestNotificationPermissions()
-        // Set notification delegate
         UNUserNotificationCenter.current().delegate = NotificationDelegate()
     }
 
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .modelContainer(sharedModelContainer) // Attach model container to the app's views
+                .modelContainer(sharedModelContainer)
         }
     }
 
@@ -47,22 +45,13 @@ struct FurfolioApp: App {
     }
 }
 
-// Notification Delegate to handle user notification events
 class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
-    func userNotificationCenter(
-        _ center: UNUserNotificationCenter,
-        willPresent notification: UNNotification,
-        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
-    ) {
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         print("Notification will be presented: \(notification.request.content.body)")
         completionHandler([.alert, .sound])
     }
 
-    func userNotificationCenter(
-        _ center: UNUserNotificationCenter,
-        didReceive response: UNNotificationResponse,
-        withCompletionHandler completionHandler: @escaping () -> Void
-    ) {
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
         print("Notification received: \(response.notification.request.content.body)")
         completionHandler()
     }

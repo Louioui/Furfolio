@@ -12,7 +12,7 @@ final class Appointment: Identifiable {
     @Attribute(.unique) var id: UUID
     var date: Date
     var dogOwner: DogOwner
-    var isCanceled: Bool = false  // Added to track cancellations
+    var isCanceled: Bool = false  // Tracks cancellations
 
     init(date: Date, dogOwner: DogOwner, isCanceled: Bool = false) {
         self.id = UUID()
@@ -21,13 +21,18 @@ final class Appointment: Identifiable {
         self.isCanceled = isCanceled
     }
 
-    // Computed property to check if appointment is completed (past date and not canceled)
+    // Computed property to check if the appointment is completed
     var isCompleted: Bool {
         return date < Date() && !isCanceled
     }
 
-    // Computed property to check if appointment is upcoming
+    // Computed property to check if the appointment is upcoming
     var isUpcoming: Bool {
         return date > Date() && !isCanceled
+    }
+
+    // Optional: Add a property for notifications or reminders
+    var requiresReminder: Bool {
+        return isUpcoming && Calendar.current.isDateInTomorrow(date)
     }
 }

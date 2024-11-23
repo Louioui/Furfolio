@@ -14,7 +14,7 @@ struct AddAppointmentView: View {
 
     @State private var appointmentDate = Date()
     @State private var appointmentNotes = ""
-    @State private var isCanceled = false // Track cancellation
+    @State private var isCanceled = false // Manage cancellation status
 
     var body: some View {
         NavigationView {
@@ -23,7 +23,7 @@ struct AddAppointmentView: View {
                     DatePicker("Date and Time", selection: $appointmentDate, displayedComponents: [.date, .hourAndMinute])
                         .datePickerStyle(GraphicalDatePickerStyle())
                     TextField("Notes", text: $appointmentNotes)
-                    Toggle("Canceled", isOn: $isCanceled) // Toggle for cancellation status
+                    Toggle("Canceled", isOn: $isCanceled) // Toggle for cancellations
                 }
             }
             .navigationTitle("New Appointment")
@@ -38,7 +38,7 @@ struct AddAppointmentView: View {
                         saveAppointment()
                         dismiss()
                     }
-                    .disabled(appointmentDate < Date())  // Disable if the appointment is in the past
+                    .disabled(appointmentDate < Date()) // Disable saving past appointments
                 }
             }
         }
@@ -46,7 +46,7 @@ struct AddAppointmentView: View {
 
     private func saveAppointment() {
         let newAppointment = Appointment(date: appointmentDate, dogOwner: dogOwner, isCanceled: isCanceled)
-        modelContext.insert(newAppointment)  // Insert appointment into the database
-        dogOwner.appointments.append(newAppointment)  // Optionally append to dogOwner for UI update
+        modelContext.insert(newAppointment) // Save to the database
+        dogOwner.appointments.append(newAppointment) // Update UI if needed
     }
 }

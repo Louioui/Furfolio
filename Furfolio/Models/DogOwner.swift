@@ -5,6 +5,7 @@
 //  Created by mac on 11/18/24.
 //
 // DogOwner.swift
+
 import SwiftData
 import Foundation
 
@@ -16,10 +17,10 @@ final class DogOwner: Identifiable {
     var breed: String
     var contactInfo: String
     var address: String
-    var dogImage: Data? // Storing dog image
+    var dogImage: Data?  // Stores the profile image
     var notes: String
-    var appointments: [Appointment] = [] // Relationship to Appointment model
-    var charges: [Charge] = [] // Relationship to Charge model
+    var appointments: [Appointment] = []  // Relationship to appointments
+    var charges: [Charge] = []  // Relationship to charges
 
     init(
         ownerName: String,
@@ -28,9 +29,7 @@ final class DogOwner: Identifiable {
         contactInfo: String,
         address: String,
         dogImage: Data? = nil,
-        notes: String = "",
-        appointments: [Appointment] = [],
-        charges: [Charge] = []
+        notes: String = ""
     ) {
         self.id = UUID()
         self.ownerName = ownerName
@@ -40,32 +39,25 @@ final class DogOwner: Identifiable {
         self.address = address
         self.dogImage = dogImage
         self.notes = notes
-        self.appointments = appointments
-        self.charges = charges
     }
 
-    // Computed property to check if the owner has upcoming appointments
+    // Computed property to check for upcoming appointments
     var hasUpcomingAppointments: Bool {
         let today = Calendar.current.startOfDay(for: Date())
         return appointments.contains { $0.date > today }
     }
 
-    // Computed property to get the next appointment
+    // Next appointment (if available)
     var nextAppointment: Appointment? {
         return appointments.filter { $0.date > Date() }.sorted { $0.date < $1.date }.first
     }
 
-    // Computed property to get the total charges for the owner
+    // Total charges for this owner
     var totalCharges: Double {
         return charges.reduce(0) { $0 + $1.amount }
     }
 
-    // Computed property to count the number of charges (useful for frequent customers)
-    var chargeCount: Int {
-        return charges.count
-    }
-
-    // Helper method to get a list of services and their counts
+    // Popular services used by this owner
     var popularServices: [String: Int] {
         var serviceCounts: [String: Int] = [:]
         charges.forEach { charge in
@@ -74,3 +66,4 @@ final class DogOwner: Identifiable {
         return serviceCounts
     }
 }
+

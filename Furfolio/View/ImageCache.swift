@@ -4,6 +4,8 @@
 //
 //  Created by mac on 11/21/24.
 //
+
+
 import UIKit
 
 class ImageCache {
@@ -12,7 +14,19 @@ class ImageCache {
     // Singleton instance
     static let shared = ImageCache()
 
-    private init() {}
+    private init() {
+        // Observe memory warnings to clear the cache automatically
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(clearCache),
+            name: UIApplication.didReceiveMemoryWarningNotification,
+            object: nil
+        )
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
 
     // Get image from cache
     func getImage(forKey key: String) -> UIImage? {
@@ -24,9 +38,15 @@ class ImageCache {
         cache.setObject(image, forKey: key as NSString)
     }
 
-    // Clear cache (optional)
-    func clearCache() {
+    // Clear cache (manual or automatic)
+    @objc func clearCache() {
         cache.removeAllObjects()
     }
-}
 
+    // Preload images to cache
+    func preloadImages(_ images: [String: UIImage]) {
+        images.forEach { key, image in
+            cache.setObject(image, forKey: key as NSString)
+        }
+    }
+}

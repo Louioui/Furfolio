@@ -10,9 +10,9 @@ struct AddChargeView: View {
     @Environment(\.modelContext) private var modelContext
     let dogOwner: DogOwner
 
-    @State private var serviceType = "Basic Package"  // Type of service provided
-    @State private var chargeAmount = 0.0  // Amount charged for the service
-    @State private var chargeNotes = ""  // Any additional notes about the charge
+    @State private var serviceType = "Basic Package"
+    @State private var chargeAmount = 0.0
+    @State private var chargeNotes = ""
 
     let serviceTypes = ["Basic Package", "Full Package", "Custom Service"]
 
@@ -30,7 +30,7 @@ struct AddChargeView: View {
                     TextField("Amount Charged", value: $chargeAmount, formatter: NumberFormatter.currency)
                         .keyboardType(.decimalPad)
                         .onChange(of: chargeAmount) { newValue in
-                            chargeAmount = max(newValue, 0.0)  // Ensure chargeAmount is non-negative
+                            chargeAmount = max(newValue, 0.0) // Ensure non-negative charges
                         }
 
                     TextField("Additional Notes", text: $chargeNotes)
@@ -47,20 +47,19 @@ struct AddChargeView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
-                        saveChargeHistory()  // Save the charge details
+                        saveChargeHistory()
                         dismiss()
                     }
-                    .disabled(chargeAmount <= 0.0)  // Disable save if charge amount is zero or negative
+                    .disabled(chargeAmount <= 0.0) // Prevent saving invalid charges
                 }
             }
         }
     }
 
     private func saveChargeHistory() {
-        // Create a new charge entry with the input details
-        let newCharge = Charge(date: Date(), type: serviceType, amount: chargeAmount, dogOwner: dogOwner)
-        modelContext.insert(newCharge)  // Insert the charge into the database
-        dogOwner.charges.append(newCharge)  // Optionally append locally to dogOwner for UI update
+        let newCharge = Charge(date: Date(), type: serviceType, amount: chargeAmount, dogOwner: dogOwner, notes: chargeNotes)
+        modelContext.insert(newCharge)
+        dogOwner.charges.append(newCharge)
     }
 }
 

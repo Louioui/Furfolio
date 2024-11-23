@@ -16,7 +16,7 @@ private let globalAppointmentDateFormatter: DateFormatter = {
 
 struct AppointmentReminderView: View {
     let dogOwners: [DogOwner]
-    
+
     var body: some View {
         NavigationView {
             List {
@@ -29,7 +29,7 @@ struct AppointmentReminderView: View {
                             Text("Reminder: 24 hours before appointment")
                                 .font(.subheadline)
                                 .foregroundColor(.gray)
-                            
+
                             Button("Set Reminder") {
                                 scheduleAppointmentReminder(for: nextAppointment)
                             }
@@ -40,18 +40,18 @@ struct AppointmentReminderView: View {
             .navigationTitle("Appointment Reminders")
         }
     }
-    
+
     func scheduleAppointmentReminder(for appointment: Appointment) {
         let content = UNMutableNotificationContent()
         content.title = "Upcoming Appointment"
         content.body = "You have an appointment with \(appointment.dogOwner.dogName) on \(globalAppointmentDateFormatter.string(from: appointment.date))."
         content.sound = .default
-        
+
         let triggerDate = Calendar.current.date(byAdding: .hour, value: -24, to: appointment.date)!
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: triggerDate.timeIntervalSinceNow, repeats: false)
-        
+
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
-        
+
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
                 print("Error scheduling notification: \(error.localizedDescription)")

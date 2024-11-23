@@ -6,7 +6,6 @@
 //
 //
 
-
 import SwiftUI
 import SwiftData
 import UserNotifications
@@ -14,62 +13,46 @@ import UserNotifications
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(FetchDescriptor<DogOwner>()) private var dogOwners: [DogOwner]
-    @Query(FetchDescriptor<DailyRevenue>()) private var dailyRevenues: [DailyRevenue] // Corrected query
+    @Query(FetchDescriptor<DailyRevenue>()) private var dailyRevenues: [DailyRevenue]
     
-    // Search functionality
     @State private var searchText = ""
-    
-    // Sheet toggles
     @State private var isShowingAddOwnerSheet = false
     @State private var isShowingMetricsView = false
-    
-    // State for selected dog owner
     @State private var selectedDogOwner: DogOwner?
-    
-    // State for error handling
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
-    
-    // To keep track of the total revenue today
     @State private var totalRevenueToday: Double = 0.0
-    
-    // Date check for daily revenue reset
     @State private var lastCheckedDate: Date = Date()
 
     var body: some View {
         NavigationSplitView {
-            // Sidebar List View
             List {
-                // Metrics Section
                 Section(header: Text("Business Insights")) {
-                    Button(action: {
-                        isShowingMetricsView = true
-                    }) {
+                    Button(action: { isShowingMetricsView = true }) {
                         Label("View Metrics Dashboard", systemImage: "chart.bar.xaxis")
                     }
                 }
-                
-                // Upcoming Appointments Section
+
                 Section(header: Text("Upcoming Appointments")) {
-                    let upcomingAppointments = dogOwners.filter { dogOwner in
-                        dogOwner.appointments.contains { appointment in
+                    let upcomingAppointments = dogOwners.filter { owner in
+                        owner.appointments.contains { appointment in
                             let today = Calendar.current.startOfDay(for: Date())
                             return appointment.date > today && appointment.date < today.addingTimeInterval(7 * 24 * 60 * 60)
                         }
                     }
-                    
+
                     if upcomingAppointments.isEmpty {
                         Text("No upcoming appointments.")
                             .foregroundColor(.gray)
                             .italic()
                     } else {
-                        ForEach(upcomingAppointments) { dogOwner in
-                            if let nextAppointment = dogOwner.appointments.sorted(by: { $0.date < $1.date }).first {
+                        ForEach(upcomingAppointments) { owner in
+                            if let nextAppointment = owner.appointments.sorted(by: { $0.date < $1.date }).first {
                                 NavigationLink {
-                                    OwnerProfileView(dogOwner: dogOwner)
+                                    OwnerProfileView(dogOwner: owner)
                                 } label: {
                                     VStack(alignment: .leading) {
-                                        Text(dogOwner.ownerName)
+                                        Text(owner.ownerName)
                                             .font(.headline)
                                         Text("Next Appointment: \(nextAppointment.date.formatted(.dateTime.month().day().year().hour().minute()))")
                                             .font(.subheadline)
@@ -81,12 +64,9 @@ struct ContentView: View {
                     }
                 }
 
-                // Dog Owners Section
                 Section(header: Text("Dog Owners")) {
                     let filteredDogOwners = dogOwners.filter { owner in
-                        searchText.isEmpty ||
-                        owner.ownerName.localizedCaseInsensitiveContains(searchText) ||
-                        owner.dogName.localizedCaseInsensitiveContains(searchText)
+                        searchText.isEmpty || owner.ownerName.localizedCaseInsensitiveContains(searchText) || owner.dogName.localizedCaseInsensitiveContains(searchText)
                     }
 
                     if filteredDogOwners.isEmpty {
@@ -94,11 +74,11 @@ struct ContentView: View {
                             .foregroundColor(.gray)
                             .italic()
                     } else {
-                        ForEach(filteredDogOwners) { dogOwner in
+                        ForEach(filteredDogOwners) { owner in
                             NavigationLink {
-                                OwnerProfileView(dogOwner: dogOwner)
+                                OwnerProfileView(dogOwner: owner)
                             } label: {
-                                DogOwnerRowView(dogOwner: dogOwner)
+                                DogOwnerRowView(dogOwner: owner)
                             }
                         }
                         .onDelete(perform: deleteDogOwners)
@@ -109,7 +89,6 @@ struct ContentView: View {
             .searchable(text: $searchText)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    // "+" button to add a new Dog Owner
                     Button(action: { isShowingAddOwnerSheet = true }) {
                         Label("Add Dog Owner", systemImage: "plus")
                     }
@@ -126,7 +105,6 @@ struct ContentView: View {
                 }
             }
             .sheet(isPresented: $isShowingMetricsView) {
-                // Pass dogOwners and dailyRevenues directly to MetricsDashboardView
                 MetricsDashboardView(dogOwners: dogOwners, dailyRevenues: dailyRevenues)
             }
             .alert(isPresented: $showErrorAlert) {
@@ -144,51 +122,31 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - Functions
-
-    // Marked this function as 'throws' because 'modelContext.save()' can throw an error.
     private func addDogOwner(ownerName: String, dogName: String, breed: String, contactInfo: String, address: String, selectedImageData: Data?) throws {
         do {
-            // Wrapping 'withAnimation' and 'modelContext.save()' in a single 'do-catch' block
             try withAnimation {
-                // Create a new DogOwner instance with the provided details
-                let newOwner = DogOwner(
-                    ownerName: ownerName,
-                    dogName: dogName,
-                    breed: breed,
-                    contactInfo: contactInfo,
-                    address: address,
-                    dogImage: selectedImageData, // Use dogImage instead of image
-                    notes: "" // Optionally set a default value for notes
-                )
-                
-                // Insert the new DogOwner into the model context
+                let newOwner = DogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, dogImage: selectedImageData)
                 modelContext.insert(newOwner)
-                
-                // Save the changes to the context (this can throw, so we use 'try')
                 try modelContext.save()
             }
         } catch {
-            // Handle any errors during the save process
-            throw error // Rethrow the error so the caller can handle it
+            throw error
         }
     }
 
     private func deleteDogOwners(at offsets: IndexSet) {
         offsets.forEach { index in
-            let dogOwner = dogOwners[index]
-            modelContext.delete(dogOwner)
+            let owner = dogOwners[index]
+            modelContext.delete(owner)
         }
         try? modelContext.save()
     }
-    
+
     private func checkForNewDayAndResetRevenue() {
         let currentDate = Date()
         if !Calendar.current.isDate(lastCheckedDate, inSameDayAs: currentDate) {
             lastCheckedDate = currentDate
-            // Reset total revenue at the start of a new day
             totalRevenueToday = 0.0
         }
     }
 }
-
