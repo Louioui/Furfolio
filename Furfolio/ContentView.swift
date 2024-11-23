@@ -4,104 +4,54 @@
 //
 //  Created by mac on 11/18/24.
 //
-//
-
 import SwiftUI
 import SwiftData
 import UserNotifications
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(FetchDescriptor<DogOwner>()) private var dogOwners: [DogOwner]
-    @Query(FetchDescriptor<DailyRevenue>()) private var dailyRevenues: [DailyRevenue]
-    
-    @State private var searchText = ""
+    @State private var dogOwners: [DogOwner] = []
+    @State private var dailyRevenues: [DailyRevenue] = []
+    @State private var searchText: String = ""
     @State private var isShowingAddOwnerSheet = false
     @State private var isShowingMetricsView = false
+    @State private var isAddingAppointment = false
+    @State private var isAddingCharge = false
     @State private var selectedDogOwner: DogOwner?
+    @State private var errorMessage: String = ""
     @State private var showErrorAlert = false
-    @State private var errorMessage = ""
-    @State private var totalRevenueToday: Double = 0.0
-    @State private var lastCheckedDate: Date = Date()
 
     var body: some View {
         NavigationSplitView {
             List {
-                Section(header: Text("Business Insights")) {
-                    Button(action: { isShowingMetricsView = true }) {
-                        Label("View Metrics Dashboard", systemImage: "chart.bar.xaxis")
+                ForEach(filteredDogOwners, id: \.id) { owner in
+                    Button {
+                        selectedDogOwner = owner
+                    } label: {
+                        DogOwnerRowView(dogOwner: owner)
                     }
                 }
-
-                Section(header: Text("Upcoming Appointments")) {
-                    let upcomingAppointments = dogOwners.filter { owner in
-                        owner.appointments.contains { appointment in
-                            let today = Calendar.current.startOfDay(for: Date())
-                            return appointment.date > today && appointment.date < today.addingTimeInterval(7 * 24 * 60 * 60)
-                        }
-                    }
-
-                    if upcomingAppointments.isEmpty {
-                        Text("No upcoming appointments.")
-                            .foregroundColor(.gray)
-                            .italic()
-                    } else {
-                        ForEach(upcomingAppointments) { owner in
-                            if let nextAppointment = owner.appointments.sorted(by: { $0.date < $1.date }).first {
-                                NavigationLink {
-                                    OwnerProfileView(dogOwner: owner)
-                                } label: {
-                                    VStack(alignment: .leading) {
-                                        Text(owner.ownerName)
-                                            .font(.headline)
-                                        Text("Next Appointment: \(nextAppointment.date.formatted(.dateTime.month().day().year().hour().minute()))")
-                                            .font(.subheadline)
-                                            .foregroundColor(.gray)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Section(header: Text("Dog Owners")) {
-                    let filteredDogOwners = dogOwners.filter { owner in
-                        searchText.isEmpty || owner.ownerName.localizedCaseInsensitiveContains(searchText) || owner.dogName.localizedCaseInsensitiveContains(searchText)
-                    }
-
-                    if filteredDogOwners.isEmpty {
-                        Text("No dog owners found.")
-                            .foregroundColor(.gray)
-                            .italic()
-                    } else {
-                        ForEach(filteredDogOwners) { owner in
-                            NavigationLink {
-                                OwnerProfileView(dogOwner: owner)
-                            } label: {
-                                DogOwnerRowView(dogOwner: owner)
-                            }
-                        }
-                        .onDelete(perform: deleteDogOwners)
-                    }
-                }
+                .onDelete(perform: deleteDogOwners)
             }
             .navigationTitle("Furfolio")
             .searchable(text: $searchText)
+            .toolbarRole(.navigationStack)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { isShowingAddOwnerSheet = true }) {
-                        Label("Add Dog Owner", systemImage: "plus")
+                    Button("Add") {
+                        isShowingAddOwnerSheet = true
+                    }
+                }
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Metrics") {
+                        isShowingMetricsView = true
                     }
                 }
             }
+
             .sheet(isPresented: $isShowingAddOwnerSheet) {
                 AddDogOwnerView { ownerName, dogName, breed, contactInfo, address, selectedImageData in
-                    do {
-                        try addDogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, selectedImageData: selectedImageData)
-                    } catch {
-                        errorMessage = error.localizedDescription
-                        showErrorAlert = true
-                    }
+                    addDogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, selectedImageData: selectedImageData)
                 }
             }
             .sheet(isPresented: $isShowingMetricsView) {
@@ -112,41 +62,91 @@ struct ContentView: View {
             }
         } detail: {
             if let selectedDogOwner = selectedDogOwner {
-                OwnerProfileView(dogOwner: selectedDogOwner)
+                OwnerProfileView(
+                    dogOwner: selectedDogOwner,
+                    onAddAppointment: { isAddingAppointment = true },
+                    onAddCharge: { isAddingCharge = true }
+                )
             } else {
                 Text("Select a dog owner to view details.")
             }
         }
+        .sheet(isPresented: $isAddingAppointment) {
+            if let selectedDogOwner = selectedDogOwner {
+                AddAppointmentView(dogOwner: selectedDogOwner)
+            }
+        }
+        .sheet(isPresented: $isAddingCharge) {
+            if let selectedDogOwner = selectedDogOwner {
+                AddChargeView(dogOwner: selectedDogOwner)
+            }
+        }
         .onAppear {
-            checkForNewDayAndResetRevenue()
+            loadDogOwners()
+            loadDailyRevenues()
         }
     }
 
-    private func addDogOwner(ownerName: String, dogName: String, breed: String, contactInfo: String, address: String, selectedImageData: Data?) throws {
-        do {
-            try withAnimation {
-                let newOwner = DogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, dogImage: selectedImageData)
-                modelContext.insert(newOwner)
-                try modelContext.save()
+    private var filteredDogOwners: [DogOwner] {
+        if searchText.isEmpty {
+            return dogOwners
+        } else {
+            return dogOwners.filter {
+                $0.ownerName.localizedCaseInsensitiveContains(searchText) ||
+                $0.dogName.localizedCaseInsensitiveContains(searchText)
             }
+        }
+    }
+
+    private func loadDogOwners() {
+        do {
+            dogOwners = try modelContext.fetch(FetchDescriptor<DogOwner>())
         } catch {
-            throw error
+            errorMessage = "Failed to fetch Dog Owners: \(error.localizedDescription)"
+            showErrorAlert = true
+        }
+    }
+
+    private func loadDailyRevenues() {
+        do {
+            dailyRevenues = try modelContext.fetch(FetchDescriptor<DailyRevenue>())
+        } catch {
+            errorMessage = "Failed to fetch Daily Revenues: \(error.localizedDescription)"
+            showErrorAlert = true
+        }
+    }
+
+    private func addDogOwner(ownerName: String, dogName: String, breed: String, contactInfo: String, address: String, selectedImageData: Data?) {
+        let newOwner = DogOwner(
+            ownerName: ownerName,
+            dogName: dogName,
+            breed: breed,
+            contactInfo: contactInfo,
+            address: address,
+            dogImage: selectedImageData
+        )
+        do {
+            modelContext.insert(newOwner)
+            try modelContext.save()
+            loadDogOwners()
+        } catch {
+            errorMessage = "Failed to save Dog Owner: \(error.localizedDescription)"
+            showErrorAlert = true
         }
     }
 
     private func deleteDogOwners(at offsets: IndexSet) {
-        offsets.forEach { index in
+        for index in offsets {
             let owner = dogOwners[index]
             modelContext.delete(owner)
         }
-        try? modelContext.save()
-    }
-
-    private func checkForNewDayAndResetRevenue() {
-        let currentDate = Date()
-        if !Calendar.current.isDate(lastCheckedDate, inSameDayAs: currentDate) {
-            lastCheckedDate = currentDate
-            totalRevenueToday = 0.0
+        do {
+            try modelContext.save()
+            loadDogOwners()
+        } catch {
+            errorMessage = "Failed to delete Dog Owners: \(error.localizedDescription)"
+            showErrorAlert = true
         }
     }
 }
+

@@ -4,6 +4,7 @@
 //
 //  Created by mac on 11/18/24.
 //
+
 import Foundation
 import SwiftData
 
@@ -21,18 +22,11 @@ final class Appointment: Identifiable {
         self.isCanceled = isCanceled
     }
 
-    // Computed property to check if the appointment is completed
     var isCompleted: Bool {
         return date < Date() && !isCanceled
     }
 
-    // Computed property to check if the appointment is upcoming
     var isUpcoming: Bool {
         return date > Date() && !isCanceled
-    }
-
-    // Optional: Add a property for notifications or reminders
-    var requiresReminder: Bool {
-        return isUpcoming && Calendar.current.isDateInTomorrow(date)
     }
 }

@@ -18,21 +18,12 @@ struct OwnerProfileView: View {
                 Text("Address: \(dogOwner.address)")
             }
 
-            Section(header: Text("Dog Information")) {
-                Text("Name: \(dogOwner.dogName)")
-                Text("Breed: \(dogOwner.breed)")
-                Text("Notes: \(dogOwner.notes)")
-            }
-
             Section(header: Text("Appointments")) {
                 ForEach(dogOwner.appointments) { appointment in
                     VStack(alignment: .leading) {
-                        Text("Appointment on \(appointment.date, formatter: appointmentDateFormatter)")
-                        if appointment.isCanceled {
-                            Text("Status: Canceled").foregroundColor(.red)
-                        } else {
-                            Text("Status: Confirmed").foregroundColor(.green)
-                        }
+                        Text("Appointment on \(appointment.date, style: .date)")
+                        Text("Status: \(appointment.isCanceled ? "Canceled" : "Confirmed")")
+                            .foregroundColor(appointment.isCanceled ? .red : .green)
                     }
                 }
             }
@@ -41,18 +32,11 @@ struct OwnerProfileView: View {
                 ForEach(dogOwner.charges) { charge in
                     VStack(alignment: .leading) {
                         Text("$\(charge.amount, specifier: "%.2f") - \(charge.type)")
-                        Text("Date: \(charge.date, formatter: appointmentDateFormatter)")
+                        Text("Date: \(charge.date, style: .date)")
                     }
                 }
             }
         }
-        .navigationTitle("\(dogOwner.ownerName)'s Profile")
+        .navigationTitle(dogOwner.ownerName)
     }
 }
-
-private let appointmentDateFormatter: DateFormatter = {
-    let formatter = DateFormatter()
-    formatter.dateStyle = .short
-    formatter.timeStyle = .short
-    return formatter
-}()

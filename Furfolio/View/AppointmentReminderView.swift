@@ -15,12 +15,13 @@ private let globalAppointmentDateFormatter: DateFormatter = {
 }()
 
 struct AppointmentReminderView: View {
-    let dogOwners: [DogOwner]
+    @State private var dogOwners: [DogOwner] = [] // State-managed array
 
     var body: some View {
         NavigationView {
             List {
-                ForEach(dogOwners) { owner in
+                // Use the plain array and specify 'id' for uniqueness
+                ForEach(dogOwners, id: \.id) { owner in
                     if let nextAppointment = owner.nextAppointment {
                         VStack(alignment: .leading) {
                             Text("\(owner.ownerName)'s Next Appointment")
@@ -34,10 +35,14 @@ struct AppointmentReminderView: View {
                                 scheduleAppointmentReminder(for: nextAppointment)
                             }
                         }
+                        .padding(.vertical, 8)
                     }
                 }
             }
             .navigationTitle("Appointment Reminders")
+            .onAppear {
+                loadDogOwners()
+            }
         }
     }
 
@@ -47,11 +52,19 @@ struct AppointmentReminderView: View {
         content.body = "You have an appointment with \(appointment.dogOwner.dogName) on \(globalAppointmentDateFormatter.string(from: appointment.date))."
         content.sound = .default
 
-        let triggerDate = Calendar.current.date(byAdding: .hour, value: -24, to: appointment.date)!
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: triggerDate.timeIntervalSinceNow, repeats: false)
+        // Calculate the trigger time (24 hours before the appointment)
+        guard let triggerDate = Calendar.current.date(byAdding: .hour, value: -24, to: appointment.date) else {
+            print("Failed to calculate trigger date")
+            return
+        }
 
+        // Create the notification trigger
+        let trigger = UNCalendarNotificationTrigger(dateMatching: Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: triggerDate), repeats: false)
+
+        // Create the notification request
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
 
+        // Add the request to the notification center
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
                 print("Error scheduling notification: \(error.localizedDescription)")
@@ -60,4 +73,10 @@ struct AppointmentReminderView: View {
             }
         }
     }
+
+    private func loadDogOwners() {
+        // Load data from your model context or API here
+        // Example: dogOwners = fetchDogOwnersFromContext()
+    }
 }
+

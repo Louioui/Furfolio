@@ -4,7 +4,6 @@
 //
 //  Created by mac on 11/18/24.
 //
-// DogOwner.swift
 
 import SwiftData
 import Foundation
@@ -17,20 +16,12 @@ final class DogOwner: Identifiable {
     var breed: String
     var contactInfo: String
     var address: String
-    var dogImage: Data?  // Stores the profile image
+    var dogImage: Data?
     var notes: String
-    var appointments: [Appointment] = []  // Relationship to appointments
-    var charges: [Charge] = []  // Relationship to charges
+    var appointments: [Appointment] = []
+    var charges: [Charge] = []
 
-    init(
-        ownerName: String,
-        dogName: String,
-        breed: String,
-        contactInfo: String,
-        address: String,
-        dogImage: Data? = nil,
-        notes: String = ""
-    ) {
+    init(ownerName: String, dogName: String, breed: String, contactInfo: String, address: String, dogImage: Data? = nil, notes: String = "") {
         self.id = UUID()
         self.ownerName = ownerName
         self.dogName = dogName
@@ -41,29 +32,25 @@ final class DogOwner: Identifiable {
         self.notes = notes
     }
 
-    // Computed property to check for upcoming appointments
-    var hasUpcomingAppointments: Bool {
-        let today = Calendar.current.startOfDay(for: Date())
-        return appointments.contains { $0.date > today }
-    }
-
-    // Next appointment (if available)
+    // Computed property to get the next upcoming appointment
     var nextAppointment: Appointment? {
-        return appointments.filter { $0.date > Date() }.sorted { $0.date < $1.date }.first
+        return appointments
+            .filter { $0.date > Date() && !$0.isCanceled }
+            .sorted { $0.date < $1.date }
+            .first
     }
 
-    // Total charges for this owner
+    // Computed property to calculate the total charges for this owner
     var totalCharges: Double {
         return charges.reduce(0) { $0 + $1.amount }
     }
 
-    // Popular services used by this owner
-    var popularServices: [String: Int] {
-        var serviceCounts: [String: Int] = [:]
-        charges.forEach { charge in
-            serviceCounts[charge.type, default: 0] += 1
+    // Computed property to get the most used service
+    var mostUsedService: String? {
+        let serviceCounts = charges.reduce(into: [String: Int]()) { counts, charge in
+            counts[charge.type, default: 0] += 1
         }
-        return serviceCounts
+        return serviceCounts.max(by: { $0.value < $1.value })?.key
     }
 }
 

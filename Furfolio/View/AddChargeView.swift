@@ -19,26 +19,18 @@ struct AddChargeView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section {
+                Section(header: Text("Charge Information")) {
                     Picker("Service Type", selection: $serviceType) {
                         ForEach(serviceTypes, id: \.self) { type in
                             Text(type)
                         }
                     }
-                    .pickerStyle(MenuPickerStyle())
-
                     TextField("Amount Charged", value: $chargeAmount, formatter: NumberFormatter.currency)
                         .keyboardType(.decimalPad)
-                        .onChange(of: chargeAmount) { newValue in
-                            chargeAmount = max(newValue, 0.0) // Ensure non-negative charges
-                        }
-
                     TextField("Additional Notes", text: $chargeNotes)
-                } header: {
-                    Text("Charge Information")
                 }
             }
-            .navigationTitle("Input Charge Details")
+            .navigationTitle("Add Charge")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
@@ -47,16 +39,15 @@ struct AddChargeView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
-                        saveChargeHistory()
+                        saveCharge()
                         dismiss()
                     }
-                    .disabled(chargeAmount <= 0.0) // Prevent saving invalid charges
                 }
             }
         }
     }
 
-    private func saveChargeHistory() {
+    private func saveCharge() {
         let newCharge = Charge(date: Date(), type: serviceType, amount: chargeAmount, dogOwner: dogOwner, notes: chargeNotes)
         modelContext.insert(newCharge)
         dogOwner.charges.append(newCharge)

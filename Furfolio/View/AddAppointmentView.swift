@@ -5,6 +5,12 @@
 //  Created by mac on 11/19/24.
 //
 // AddAppointmentView.swift
+//
+//  AddAppointmentView.swift
+//  Furfolio
+//
+//  Created by mac on 11/19/24.
+//
 import SwiftUI
 
 struct AddAppointmentView: View {
@@ -14,16 +20,15 @@ struct AddAppointmentView: View {
 
     @State private var appointmentDate = Date()
     @State private var appointmentNotes = ""
-    @State private var isCanceled = false // Manage cancellation status
+    @State private var isCanceled = false
 
     var body: some View {
         NavigationView {
             Form {
                 Section(header: Text("Appointment Details")) {
                     DatePicker("Date and Time", selection: $appointmentDate, displayedComponents: [.date, .hourAndMinute])
-                        .datePickerStyle(GraphicalDatePickerStyle())
                     TextField("Notes", text: $appointmentNotes)
-                    Toggle("Canceled", isOn: $isCanceled) // Toggle for cancellations
+                    Toggle("Canceled", isOn: $isCanceled)
                 }
             }
             .navigationTitle("New Appointment")
@@ -38,7 +43,6 @@ struct AddAppointmentView: View {
                         saveAppointment()
                         dismiss()
                     }
-                    .disabled(appointmentDate < Date()) // Disable saving past appointments
                 }
             }
         }
@@ -46,7 +50,7 @@ struct AddAppointmentView: View {
 
     private func saveAppointment() {
         let newAppointment = Appointment(date: appointmentDate, dogOwner: dogOwner, isCanceled: isCanceled)
-        modelContext.insert(newAppointment) // Save to the database
-        dogOwner.appointments.append(newAppointment) // Update UI if needed
+        modelContext.insert(newAppointment)
+        dogOwner.appointments.append(newAppointment)
     }
 }

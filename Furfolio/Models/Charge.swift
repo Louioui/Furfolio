@@ -3,7 +3,6 @@
 //  Furfolio
 //
 //  Created by mac on 11/18/24.
-//
 
 import Foundation
 import SwiftData
@@ -12,7 +11,7 @@ import SwiftData
 final class Charge: Identifiable {
     @Attribute(.unique) var id: UUID
     var date: Date
-    var type: String  // e.g., Basic, Full, Custom Service
+    var type: String
     var amount: Double
     var dogOwner: DogOwner
     var notes: String
