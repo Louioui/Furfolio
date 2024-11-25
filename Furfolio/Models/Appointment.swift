@@ -17,9 +17,10 @@ final class Appointment: Identifiable {
     enum ServiceType: String, Codable, CaseIterable {
         case basic = "Basic Package"
         case full = "Full Package"
+        case custom = "Custom Package" // Added "Custom Package"
     }
     var serviceType: ServiceType
-    var notes: String
+    var notes: String?
     var isRecurring: Bool
     var recurrenceFrequency: RecurrenceFrequency?
     var isNotified: Bool = false
@@ -30,7 +31,7 @@ final class Appointment: Identifiable {
         case monthly = "Monthly"
     }
 
-    init(date: Date, dogOwner: DogOwner, serviceType: ServiceType, notes: String = "", isRecurring: Bool = false, recurrenceFrequency: RecurrenceFrequency? = nil) {
+    init(date: Date, dogOwner: DogOwner, serviceType: ServiceType, notes: String? = nil, isRecurring: Bool = false, recurrenceFrequency: RecurrenceFrequency? = nil) {
         self.id = UUID()
         self.date = date
         self.dogOwner = dogOwner
@@ -45,6 +46,11 @@ final class Appointment: Identifiable {
     /// Check if the appointment is valid (future date)
     var isValid: Bool {
         date > Date()
+    }
+
+    /// Check if the appointment is a past event
+    var isPast: Bool {
+        date <= Date()
     }
 
     /// Format the appointment date for display
@@ -97,5 +103,4 @@ final class Appointment: Identifiable {
         isNotified = true
     }
 }
-
 

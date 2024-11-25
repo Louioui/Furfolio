@@ -117,9 +117,10 @@ final class DogOwner: Identifiable {
 
     /// Add a new charge
     func addCharge(date: Date, type: String, amount: Double, notes: String = "") {
-        let newCharge = Charge(date: date, type: type, amount: amount, dogOwner: self, notes: notes)
+        // Convert the string to `Charge.ServiceType`
+        let chargeType = Charge.ServiceType(rawValue: type) ?? .custom
+        let newCharge = Charge(date: date, type: chargeType, amount: amount, dogOwner: self, notes: notes)
         charges.append(newCharge)
     }
 }
-
 

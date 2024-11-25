@@ -87,12 +87,11 @@ struct AddAppointmentView: View {
     /// Validates the appointment and checks for conflicts
     private func validateAppointment() -> Bool {
         guard validateFields() else { return false }
-        if checkConflicts() {
-            return true
-        } else {
+        if !checkConflicts() {
             conflictWarning = "This appointment conflicts with another!"
             return false
         }
+        return true
     }
 
     /// Ensures required fields are filled
@@ -154,5 +153,4 @@ struct AddAppointmentView: View {
         }
     }
 }
-
 

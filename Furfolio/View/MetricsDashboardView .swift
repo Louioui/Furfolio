@@ -72,9 +72,12 @@ struct MetricsDashboardView: View {
         return appointments.filter { $0.date > today && $0.date <= endDate }
     }
 
-    /// Summarizes charges by type
+    /// Summarizes charges by type and converts keys to `String`
     private func chargesSummary() -> [String: Double] {
-        Charge.totalByType(charges: charges)
+        let summary = Charge.totalByType(charges: charges)
+        return summary.reduce(into: [String: Double]()) { result, item in
+            result[item.key.rawValue] = item.value
+        }
     }
 }
 
@@ -198,7 +201,7 @@ struct PopularServicesView: View {
             Text("Popular Services")
                 .font(.headline)
             let serviceCounts = charges.reduce(into: [String: Int]()) { counts, charge in
-                counts[charge.type, default: 0] += 1
+                counts[charge.type.rawValue, default: 0] += 1
             }
             if serviceCounts.isEmpty {
                 Text("No services data available.")
@@ -243,5 +246,4 @@ struct DateRangePicker: View {
 enum DateRange {
     case lastWeek, lastMonth, custom
 }
-
 

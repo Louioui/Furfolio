@@ -13,6 +13,8 @@ struct OwnerProfileView: View {
     @State private var isEditing = false
     @State private var showAppointments = true
     @State private var showCharges = true
+    @State private var showAddAppointment = false
+    @State private var showAddCharge = false
 
     var body: some View {
         NavigationView {
@@ -49,9 +51,14 @@ struct OwnerProfileView: View {
             }
             .sheet(isPresented: $isEditing) {
                 EditDogOwnerView(dogOwner: dogOwner) { updatedOwner in
-                    // Update logic to replace the dogOwner details in the parent view if needed
                     isEditing = false
                 }
+            }
+            .sheet(isPresented: $showAddAppointment) {
+                AddAppointmentView(dogOwner: dogOwner)
+            }
+            .sheet(isPresented: $showAddCharge) {
+                AddChargeView(dogOwner: dogOwner)
             }
         }
     }
@@ -140,6 +147,13 @@ struct OwnerProfileView: View {
                 }
                 .font(.caption)
                 .foregroundColor(.blue)
+                Button(action: {
+                    showAddAppointment = true
+                }) {
+                    Image(systemName: "calendar.badge.plus")
+                        .font(.headline)
+                }
+                .foregroundColor(.blue)
             }
             if dogOwner.appointments.isEmpty {
                 Text("No appointments available.")
@@ -150,12 +164,11 @@ struct OwnerProfileView: View {
                     HStack {
                         VStack(alignment: .leading) {
                             Text("Date: \(appointment.date.formatted(.dateTime.month().day().year()))")
-                            Text("Service: \(appointment.serviceType)")
+                            Text("Service: \(appointment.serviceType.rawValue)")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
-
-                            if !appointment.notes.isEmpty {
-                                Text("Notes: \(appointment.notes)")
+                            if let notes = appointment.notes, !notes.isEmpty {
+                                Text("Notes: \(notes)")
                                     .font(.caption2)
                                     .foregroundColor(.secondary)
                             }
@@ -183,6 +196,13 @@ struct OwnerProfileView: View {
                 }
                 .font(.caption)
                 .foregroundColor(.blue)
+                Button(action: {
+                    showAddCharge = true
+                }) {
+                    Image(systemName: "plus.circle")
+                        .font(.headline)
+                }
+                .foregroundColor(.blue)
             }
             if dogOwner.charges.isEmpty {
                 Text("No charges recorded.")
@@ -193,12 +213,11 @@ struct OwnerProfileView: View {
                     HStack {
                         VStack(alignment: .leading) {
                             Text("Date: \(charge.date.formatted(.dateTime.month().day().year()))")
-                            Text("Type: \(charge.type)")
+                            Text("Type: \(charge.type.rawValue)")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
-
-                            if !charge.notes.isEmpty {
-                                Text("Notes: \(charge.notes)")
+                            if let notes = charge.notes, !notes.isEmpty {
+                                Text("Notes: \(notes)")
                                     .font(.caption2)
                                     .foregroundColor(.secondary)
                             }
@@ -216,5 +235,4 @@ struct OwnerProfileView: View {
         .cornerRadius(10)
     }
 }
-
 

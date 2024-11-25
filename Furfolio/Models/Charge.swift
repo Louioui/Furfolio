@@ -12,12 +12,19 @@ import SwiftData
 final class Charge: Identifiable {
     @Attribute(.unique) var id: UUID
     var date: Date
-    var type: String // Service type
+    var type: ServiceType // Enum for service types
     var amount: Double
     @Relationship(deleteRule: .nullify) var dogOwner: DogOwner
-    var notes: String
+    var notes: String?
 
-    init(date: Date, type: String, amount: Double, dogOwner: DogOwner, notes: String = "") {
+    // Enum to define service types
+    enum ServiceType: String, Codable, CaseIterable {
+        case basic = "Basic Package"
+        case full = "Full Package"
+        case custom = "Custom Package"
+    }
+
+    init(date: Date, type: ServiceType, amount: Double, dogOwner: DogOwner, notes: String? = nil) {
         self.id = UUID()
         self.date = date
         self.type = type
@@ -38,28 +45,17 @@ final class Charge: Identifiable {
         date.formatted(.dateTime.month().day().year())
     }
 
-    /// Categorize the charge by type
-    var category: String {
-        if type.contains("Grooming") {
-            return "Grooming"
-        } else if type.contains("Product") {
-            return "Product"
-        } else {
-            return "Miscellaneous"
-        }
-    }
-
     /// Validation to ensure the charge is valid
     var isValid: Bool {
-        amount > 0 && !type.isEmpty
+        amount > 0 && !type.rawValue.isEmpty
     }
-
-    // MARK: - Methods
 
     /// Check if the charge is overdue
     var isOverdue: Bool {
         date < Date()
     }
+
+    // MARK: - Methods
 
     /// Check if a charge belongs to a specific month and year
     func isInMonth(_ month: Int, year: Int) -> Bool {
@@ -72,8 +68,8 @@ final class Charge: Identifiable {
     // MARK: - Static Methods
 
     /// Calculate total amounts grouped by charge type
-    static func totalByType(charges: [Charge]) -> [String: Double] {
-        var totals = [String: Double]()
+    static func totalByType(charges: [Charge]) -> [ServiceType: Double] {
+        var totals = [ServiceType: Double]()
         for charge in charges {
             totals[charge.type, default: 0] += charge.amount
         }
@@ -90,5 +86,4 @@ final class Charge: Identifiable {
         charges.filter { $0.dogOwner.id == owner.id }
     }
 }
-
 

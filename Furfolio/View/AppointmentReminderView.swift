@@ -52,11 +52,13 @@ struct AppointmentReminderView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Next Appointment: \(globalAppointmentDateFormatter.string(from: appointment.date))")
                 .font(.subheadline)
-            if !appointment.notes.isEmpty {
-                Text("Notes: \(appointment.notes)")
+            
+            if let notes = appointment.notes, !notes.isEmpty {
+                Text("Notes: \(notes)")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
+
             Text("Reminder: 24 hours before appointment")
                 .font(.caption)
                 .foregroundColor(.gray)
@@ -85,8 +87,8 @@ struct AppointmentReminderView: View {
         let content = UNMutableNotificationContent()
         content.title = "Upcoming Appointment"
         content.body = "You have an appointment with \(owner.ownerName) for \(owner.dogName) on \(globalAppointmentDateFormatter.string(from: appointment.date))."
-        if !appointment.notes.isEmpty {
-            content.body += " Notes: \(appointment.notes)"
+        if let notes = appointment.notes, !notes.isEmpty {
+            content.body += " Notes: \(notes)"
         }
         content.sound = .default
 
@@ -113,5 +115,4 @@ struct AppointmentReminderView: View {
         return triggerDate > Date()
     }
 }
-
 

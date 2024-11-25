@@ -49,19 +49,7 @@ struct ContentView: View {
                                 NavigationLink {
                                     OwnerProfileView(dogOwner: owner)
                                 } label: {
-                                    VStack(alignment: .leading) {
-                                        Text(owner.ownerName)
-                                            .font(.headline)
-                                        Text("Next Appointment: \(appointment.date.formatted(.dateTime.month().day().hour().minute()))")
-                                            .font(.subheadline)
-                                            .foregroundColor(.gray)
-                                        if !appointment.notes.isEmpty {
-                                            Text("Notes: \(appointment.notes)")
-                                                .font(.caption)
-                                                .foregroundColor(.secondary)
-                                                .italic()
-                                        }
-                                    }
+                                    appointmentRow(for: appointment, owner: owner)
                                 }
                             }
                         }
@@ -128,15 +116,36 @@ struct ContentView: View {
         }
     }
 
+    // MARK: - Helper Views
+
+    /// Builds a row for an appointment
+    @ViewBuilder
+    private func appointmentRow(for appointment: Appointment, owner: DogOwner) -> some View {
+        VStack(alignment: .leading) {
+            Text(owner.ownerName)
+                .font(.headline)
+            Text("Next Appointment: \(appointment.date.formatted(.dateTime.month().day().hour().minute()))")
+                .font(.subheadline)
+                .foregroundColor(.gray)
+            if let notes = appointment.notes, !notes.isEmpty {
+                Text("Notes: \(notes)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .italic()
+            }
+        }
+    }
+
     // MARK: - Helper Functions
 
     /// Filters upcoming appointments within the next 7 days
     private func fetchUpcomingAppointments() -> [Appointment] {
         let today = Date()
         let endDate = Calendar.current.date(byAdding: .day, value: 7, to: today) ?? today
-        return dogOwners.flatMap { $0.appointments }
-            .filter { $0.date > today && $0.date <= endDate }
-            .sorted { $0.date < $1.date }
+
+        let allAppointments = dogOwners.flatMap { $0.appointments }
+        let filteredAppointments = allAppointments.filter { $0.date > today && $0.date <= endDate }
+        return filteredAppointments.sorted { $0.date < $1.date }
     }
 
     /// Finds the owner for a given appointment
@@ -146,13 +155,15 @@ struct ContentView: View {
 
     /// Filters dog owners based on the search text
     private func filterDogOwners() -> [DogOwner] {
-        dogOwners.filter { owner in
+        let lowercasedSearchText = searchText.lowercased()
+
+        return dogOwners.filter { owner in
             searchText.isEmpty ||
-            owner.ownerName.localizedCaseInsensitiveContains(searchText) ||
-            owner.dogName.localizedCaseInsensitiveContains(searchText) ||
-            owner.breed.localizedCaseInsensitiveContains(searchText) ||
-            owner.address.localizedCaseInsensitiveContains(searchText) ||
-            owner.notes.localizedCaseInsensitiveContains(searchText)
+            owner.ownerName.lowercased().contains(lowercasedSearchText) ||
+            owner.dogName.lowercased().contains(lowercasedSearchText) ||
+            owner.breed.lowercased().contains(lowercasedSearchText) ||
+            owner.address.lowercased().contains(lowercasedSearchText) ||
+            owner.notes.lowercased().contains(lowercasedSearchText)
         }
     }
 
@@ -180,5 +191,4 @@ struct ContentView: View {
         }
     }
 }
-
 

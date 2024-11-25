@@ -16,6 +16,7 @@ struct AddChargeView: View {
     @State private var chargeAmount: Double? = nil // Amount charged for the service
     @State private var chargeNotes = "" // Any additional notes about the charge
     @State private var showErrorAlert = false
+    @State private var errorMessage = ""
     @State private var isSaving = false // Prevent multiple save actions
 
     var body: some View {
@@ -71,7 +72,7 @@ struct AddChargeView: View {
             .alert("Invalid Charge", isPresented: $showErrorAlert) {
                 Button("OK", role: .cancel) {}
             } message: {
-                Text("Please enter a valid amount greater than 0.")
+                Text(errorMessage)
             }
         }
     }
@@ -80,7 +81,12 @@ struct AddChargeView: View {
 
     /// Validates the charge amount and ensures required fields are completed
     private func validateCharge() -> Bool {
-        guard let amount = chargeAmount, amount > 0.0 else {
+        if let amount = chargeAmount, amount <= 0.0 {
+            errorMessage = "Charge amount must be greater than 0."
+            return false
+        }
+        if serviceType.rawValue.isEmpty {
+            errorMessage = "Please select a valid service type."
             return false
         }
         return true
@@ -105,7 +111,7 @@ struct AddChargeView: View {
     private func saveChargeHistory() {
         let newCharge = Charge(
             date: Date(),
-            type: serviceType.rawValue,
+            type: Charge.ServiceType(rawValue: serviceType.rawValue) ?? .custom, // Default to "Custom Service"
             amount: chargeAmount ?? 0.0,
             dogOwner: dogOwner,
             notes: chargeNotes
@@ -134,5 +140,4 @@ extension NumberFormatter {
         return formatter
     }
 }
-
 
