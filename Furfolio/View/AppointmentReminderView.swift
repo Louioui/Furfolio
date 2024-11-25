@@ -4,79 +4,114 @@
 //
 //  Created by mac on 11/20/24.
 //
+
 import SwiftUI
 import UserNotifications
 
+// Define a shared DateFormatter to be used globally
 private let globalAppointmentDateFormatter: DateFormatter = {
     let formatter = DateFormatter()
-    formatter.dateStyle = .short
+    formatter.dateStyle = .medium
     formatter.timeStyle = .short
     return formatter
 }()
 
 struct AppointmentReminderView: View {
-    @State private var dogOwners: [DogOwner] = [] // State-managed array
+    let dogOwners: [DogOwner]
+    @State private var showAlert = false
+    @State private var alertMessage = ""
 
     var body: some View {
         NavigationView {
             List {
-                // Use the plain array and specify 'id' for uniqueness
-                ForEach(dogOwners, id: \.id) { owner in
+                ForEach(dogOwners) { owner in
                     if let nextAppointment = owner.nextAppointment {
-                        VStack(alignment: .leading) {
-                            Text("\(owner.ownerName)'s Next Appointment")
-                                .font(.headline)
-                            Text("Date: \(globalAppointmentDateFormatter.string(from: nextAppointment.date))")
-                            Text("Reminder: 24 hours before appointment")
-                                .font(.subheadline)
-                                .foregroundColor(.gray)
-
-                            Button("Set Reminder") {
-                                scheduleAppointmentReminder(for: nextAppointment)
-                            }
+                        Section(header: Text(owner.ownerName)) {
+                            reminderRow(for: nextAppointment, owner: owner)
                         }
-                        .padding(.vertical, 8)
+                    } else {
+                        Text("\(owner.ownerName) has no upcoming appointments.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
                     }
                 }
             }
             .navigationTitle("Appointment Reminders")
-            .onAppear {
-                loadDogOwners()
+            .alert("Notification Status", isPresented: $showAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(alertMessage)
             }
         }
     }
 
-    func scheduleAppointmentReminder(for appointment: Appointment) {
-        let content = UNMutableNotificationContent()
-        content.title = "Upcoming Appointment"
-        content.body = "You have an appointment with \(appointment.dogOwner.dogName) on \(globalAppointmentDateFormatter.string(from: appointment.date))."
-        content.sound = .default
+    // MARK: - Reminder Row
 
-        // Calculate the trigger time (24 hours before the appointment)
-        guard let triggerDate = Calendar.current.date(byAdding: .hour, value: -24, to: appointment.date) else {
-            print("Failed to calculate trigger date")
+    /// Generates a row for the reminder
+    private func reminderRow(for appointment: Appointment, owner: DogOwner) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Next Appointment: \(globalAppointmentDateFormatter.string(from: appointment.date))")
+                .font(.subheadline)
+            if !appointment.notes.isEmpty {
+                Text("Notes: \(appointment.notes)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            Text("Reminder: 24 hours before appointment")
+                .font(.caption)
+                .foregroundColor(.gray)
+
+            Button("Set Reminder") {
+                scheduleAppointmentReminder(for: appointment, owner: owner)
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(!canScheduleReminder(for: appointment))
+            .opacity(canScheduleReminder(for: appointment) ? 1.0 : 0.5)
+        }
+        .padding(.vertical, 8)
+    }
+
+    // MARK: - Reminder Scheduling
+
+    /// Schedules a notification reminder for the given appointment
+    private func scheduleAppointmentReminder(for appointment: Appointment, owner: DogOwner) {
+        guard let triggerDate = Calendar.current.date(byAdding: .hour, value: -24, to: appointment.date),
+              triggerDate > Date() else {
+            alertMessage = "The appointment is too soon to schedule a reminder."
+            showAlert = true
             return
         }
 
-        // Create the notification trigger
-        let trigger = UNCalendarNotificationTrigger(dateMatching: Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: triggerDate), repeats: false)
+        let content = UNMutableNotificationContent()
+        content.title = "Upcoming Appointment"
+        content.body = "You have an appointment with \(owner.ownerName) for \(owner.dogName) on \(globalAppointmentDateFormatter.string(from: appointment.date))."
+        if !appointment.notes.isEmpty {
+            content.body += " Notes: \(appointment.notes)"
+        }
+        content.sound = .default
 
-        // Create the notification request
+        let trigger = UNCalendarNotificationTrigger(dateMatching: Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: triggerDate), repeats: false)
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
 
-        // Add the request to the notification center
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                print("Error scheduling notification: \(error.localizedDescription)")
+                alertMessage = "Failed to schedule notification: \(error.localizedDescription)"
             } else {
-                print("Reminder scheduled for \(appointment.dogOwner.ownerName)'s appointment.")
+                alertMessage = "Reminder successfully scheduled for \(owner.ownerName)'s appointment."
             }
+            showAlert = true
         }
     }
 
-    private func loadDogOwners() {
-        // Load data from your model context or API here
-        // Example: dogOwners = fetchDogOwnersFromContext()
+    // MARK: - Helper Methods
+
+    /// Checks if a reminder can be scheduled for the given appointment
+    private func canScheduleReminder(for appointment: Appointment) -> Bool {
+        guard let triggerDate = Calendar.current.date(byAdding: .hour, value: -24, to: appointment.date) else {
+            return false
+        }
+        return triggerDate > Date()
     }
 }
+
 

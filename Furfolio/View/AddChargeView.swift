@@ -3,6 +3,8 @@
 //  Furfolio
 //
 //  Created by mac on 11/19/24.
+//
+
 import SwiftUI
 
 struct AddChargeView: View {
@@ -10,24 +12,40 @@ struct AddChargeView: View {
     @Environment(\.modelContext) private var modelContext
     let dogOwner: DogOwner
 
-    @State private var serviceType = "Basic Package"
-    @State private var chargeAmount = 0.0
-    @State private var chargeNotes = ""
-
-    let serviceTypes = ["Basic Package", "Full Package", "Custom Service"]
+    @State private var serviceType: ChargeType = .basic // Enum for service type
+    @State private var chargeAmount: Double? = nil // Amount charged for the service
+    @State private var chargeNotes = "" // Any additional notes about the charge
+    @State private var showErrorAlert = false
+    @State private var isSaving = false // Prevent multiple save actions
 
     var body: some View {
         NavigationView {
             Form {
                 Section(header: Text("Charge Information")) {
+                    // Service Type Picker
                     Picker("Service Type", selection: $serviceType) {
-                        ForEach(serviceTypes, id: \.self) { type in
-                            Text(type)
+                        ForEach(ChargeType.allCases, id: \.self) { type in
+                            Text(type.rawValue)
                         }
                     }
-                    TextField("Amount Charged", value: $chargeAmount, formatter: NumberFormatter.currency)
+                    .pickerStyle(MenuPickerStyle())
+
+                    // Charge Amount Input
+                    TextField("Amount Charged", value: $chargeAmount, format: .currency(code: "USD"))
                         .keyboardType(.decimalPad)
-                    TextField("Additional Notes", text: $chargeNotes)
+                        .onChange(of: chargeAmount) { newValue in
+                            if let newValue {
+                                chargeAmount = max(newValue, 0.0) // Ensure chargeAmount is non-negative
+                            }
+                        }
+
+                    // Notes Field
+                    TextField("Additional Notes (Optional)", text: $chargeNotes)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .autocapitalization(.sentences)
+                        .onChange(of: chargeNotes) { _ in
+                            limitNotesLength()
+                        }
                 }
             }
             .navigationTitle("Add Charge")
@@ -39,19 +57,73 @@ struct AddChargeView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
-                        saveCharge()
-                        dismiss()
+                        if validateCharge() {
+                            isSaving = true
+                            saveChargeHistory()
+                            dismiss()
+                        } else {
+                            showErrorAlert = true
+                        }
                     }
+                    .disabled(!isFormValid() || isSaving) // Disable save if invalid or already saving
                 }
+            }
+            .alert("Invalid Charge", isPresented: $showErrorAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Please enter a valid amount greater than 0.")
             }
         }
     }
 
-    private func saveCharge() {
-        let newCharge = Charge(date: Date(), type: serviceType, amount: chargeAmount, dogOwner: dogOwner, notes: chargeNotes)
-        modelContext.insert(newCharge)
-        dogOwner.charges.append(newCharge)
+    // MARK: - Validation Methods
+
+    /// Validates the charge amount and ensures required fields are completed
+    private func validateCharge() -> Bool {
+        guard let amount = chargeAmount, amount > 0.0 else {
+            return false
+        }
+        return true
     }
+
+    /// Checks if the form is valid for enabling the "Save" button
+    private func isFormValid() -> Bool {
+        guard let amount = chargeAmount else { return false }
+        return amount > 0.0 && !serviceType.rawValue.isEmpty
+    }
+
+    /// Limits the length of the notes to 250 characters
+    private func limitNotesLength() {
+        if chargeNotes.count > 250 {
+            chargeNotes = String(chargeNotes.prefix(250))
+        }
+    }
+
+    // MARK: - Save Method
+
+    /// Saves the charge entry to the model context
+    private func saveChargeHistory() {
+        let newCharge = Charge(
+            date: Date(),
+            type: serviceType.rawValue,
+            amount: chargeAmount ?? 0.0,
+            dogOwner: dogOwner,
+            notes: chargeNotes
+        )
+        withAnimation {
+            modelContext.insert(newCharge) // Insert the charge into the database
+            dogOwner.charges.append(newCharge) // Optionally append locally to dogOwner for UI update
+        }
+    }
+}
+
+// MARK: - ChargeType Enum
+
+/// Enum for predefined charge types
+enum ChargeType: String, CaseIterable {
+    case basic = "Basic Package"
+    case full = "Full Package"
+    case custom = "Custom Service"
 }
 
 extension NumberFormatter {
@@ -62,3 +134,5 @@ extension NumberFormatter {
         return formatter
     }
 }
+
+
