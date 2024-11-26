@@ -26,9 +26,6 @@ struct OwnerProfileView: View {
                     // Dog Info Section
                     dogInfoSection()
 
-                    // Metrics Section
-                    metricsSection()
-
                     // Appointment History Section
                     if showAppointments {
                         appointmentHistorySection()
@@ -115,22 +112,6 @@ struct OwnerProfileView: View {
         }
         .padding()
         .background(Color.blue.opacity(0.1))
-        .cornerRadius(10)
-    }
-
-    // MARK: - Metrics Section
-    @ViewBuilder
-    private func metricsSection() -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Metrics")
-                .font(.headline)
-            Text("Total Charges: \(dogOwner.totalCharges.formatted(.currency(code: "USD")))")
-            Text("Upcoming Appointments: \(dogOwner.hasUpcomingAppointments ? "Yes" : "No")")
-            Text("Total Appointments: \(dogOwner.appointments.count)")
-            Text("Total Charges Count: \(dogOwner.charges.count)")
-        }
-        .padding()
-        .background(Color.green.opacity(0.1))
         .cornerRadius(10)
     }
 
