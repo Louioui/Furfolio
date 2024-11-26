@@ -24,6 +24,7 @@ final class Charge: Identifiable {
         case custom = "Custom Package"
     }
 
+    // MARK: - Initializer
     init(date: Date, type: ServiceType, amount: Double, dogOwner: DogOwner, notes: String? = nil) {
         self.id = UUID()
         self.date = date
@@ -37,7 +38,10 @@ final class Charge: Identifiable {
 
     /// Format the charge amount as currency
     var formattedAmount: String {
-        NumberFormatter.localizedString(from: NSNumber(value: amount), number: .currency)
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = Locale.current.currency?.identifier ?? "USD"
+        return formatter.string(from: NSNumber(value: amount)) ?? "$\(amount)"
     }
 
     /// Format the charge date for display
@@ -65,6 +69,12 @@ final class Charge: Identifiable {
         return chargeMonth == month && chargeYear == year
     }
 
+    /// Apply a discount to the charge
+    func applyDiscount(_ percentage: Double) {
+        guard percentage > 0 && percentage <= 100 else { return }
+        amount -= amount * (percentage / 100)
+    }
+
     // MARK: - Static Methods
 
     /// Calculate total amounts grouped by charge type
@@ -84,6 +94,20 @@ final class Charge: Identifiable {
     /// Filter charges based on a specific dog owner
     static func chargesForOwner(_ owner: DogOwner, from charges: [Charge]) -> [Charge] {
         charges.filter { $0.dogOwner.id == owner.id }
+    }
+
+    /// Get overdue charges from a list
+    static func overdueCharges(from charges: [Charge]) -> [Charge] {
+        charges.filter { $0.isOverdue }
+    }
+
+    /// Categorize charges by service type
+    static func categorizeByType(_ charges: [Charge]) -> [ServiceType: [Charge]] {
+        var categorized = [ServiceType: [Charge]]()
+        for charge in charges {
+            categorized[charge.type, default: []].append(charge)
+        }
+        return categorized
     }
 }
 

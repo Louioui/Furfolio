@@ -110,8 +110,17 @@ struct ContentView: View {
             if let selectedDogOwner = selectedDogOwner {
                 OwnerProfileView(dogOwner: selectedDogOwner)
             } else {
-                Text("Select a dog owner to view details.")
-                    .foregroundColor(.secondary)
+                VStack {
+                    Text("Select a dog owner to view details.")
+                        .foregroundColor(.secondary)
+                        .padding()
+                        .multilineTextAlignment(.center)
+                    Image(systemName: "person.crop.circle.badge.questionmark")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 150, height: 150)
+                        .foregroundColor(.gray.opacity(0.5))
+                }
             }
         }
     }

@@ -22,6 +22,7 @@ final class DogOwner: Identifiable {
     @Relationship(deleteRule: .cascade) var appointments: [Appointment] = []
     @Relationship(deleteRule: .cascade) var charges: [Charge] = []
     
+    // MARK: - Initializer
     init(
         ownerName: String,
         dogName: String,
@@ -105,6 +106,21 @@ final class DogOwner: Identifiable {
         return dataSizeMB <= maxSizeMB && image.size.width > 100 && image.size.height > 100
     }
 
+    /// Resize the dog's image to a specific width while maintaining aspect ratio
+    func resizeImage(targetWidth: CGFloat) -> Data? {
+        guard let data = dogImage, let image = UIImage(data: data) else { return nil }
+        let scale = targetWidth / image.size.width
+        let targetHeight = image.size.height * scale
+        let newSize = CGSize(width: targetWidth, height: targetHeight)
+
+        UIGraphicsBeginImageContextWithOptions(newSize, false, 0.0)
+        image.draw(in: CGRect(origin: .zero, size: newSize))
+        let resizedImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+
+        return resizedImage?.jpegData(compressionQuality: 0.8)
+    }
+
     /// Remove all past appointments
     func removePastAppointments() {
         appointments.removeAll { $0.date < Date() }
@@ -121,6 +137,13 @@ final class DogOwner: Identifiable {
         let chargeType = Charge.ServiceType(rawValue: type) ?? .custom
         let newCharge = Charge(date: date, type: chargeType, amount: amount, dogOwner: self, notes: notes)
         charges.append(newCharge)
+    }
+
+    /// Add a new appointment
+    func addAppointment(date: Date, serviceType: String, notes: String = "") {
+        let appointmentType = Appointment.ServiceType(rawValue: serviceType) ?? .custom
+        let newAppointment = Appointment(date: date, dogOwner: self, serviceType: appointmentType, notes: notes)
+        appointments.append(newAppointment)
     }
 }
 

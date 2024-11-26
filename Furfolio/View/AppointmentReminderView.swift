@@ -52,7 +52,7 @@ struct AppointmentReminderView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Next Appointment: \(globalAppointmentDateFormatter.string(from: appointment.date))")
                 .font(.subheadline)
-            
+
             if let notes = appointment.notes, !notes.isEmpty {
                 Text("Notes: \(notes)")
                     .font(.caption)

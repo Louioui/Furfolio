@@ -48,12 +48,19 @@ struct AddDogOwnerView: View {
                     TextField("Breed", text: $breed)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
 
-                    TextField("Notes (Optional)", text: $notes)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .autocapitalization(.sentences)
-                        .onChange(of: notes) { _ in
-                            limitNotesLength()
+                    VStack(alignment: .leading) {
+                        TextField("Notes (Optional)", text: $notes)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .autocapitalization(.sentences)
+                            .onChange(of: notes) { _ in
+                                limitNotesLength()
+                            }
+                        if notes.count > 250 {
+                            Text("Notes must be 250 characters or less.")
+                                .font(.caption)
+                                .foregroundColor(.red)
                         }
+                    }
                 }
 
                 // Dog Image Section
@@ -157,5 +164,4 @@ struct AddDogOwnerView: View {
         return image.size.width > 100 && image.size.height > 100
     }
 }
-
 

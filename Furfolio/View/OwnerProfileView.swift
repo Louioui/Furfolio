@@ -41,9 +41,13 @@ struct OwnerProfileView: View {
             .navigationTitle("Owner Profile")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Edit") {
+                    Button(action: {
                         isEditing.toggle()
+                    }) {
+                        Image(systemName: "pencil")
+                            .font(.title2)
                     }
+                    .accessibilityLabel("Edit Owner Profile")
                 }
             }
             .sheet(isPresented: $isEditing) {
@@ -123,14 +127,12 @@ struct OwnerProfileView: View {
                 Text("Appointment History")
                     .font(.headline)
                 Spacer()
-                Button(showAppointments ? "Hide" : "Show") {
-                    withAnimation { showAppointments.toggle() }
+                Button(action: { withAnimation { showAppointments.toggle() } }) {
+                    Text(showAppointments ? "Hide" : "Show")
+                        .font(.caption)
+                        .foregroundColor(.blue)
                 }
-                .font(.caption)
-                .foregroundColor(.blue)
-                Button(action: {
-                    showAddAppointment = true
-                }) {
+                Button(action: { showAddAppointment = true }) {
                     Image(systemName: "calendar.badge.plus")
                         .font(.headline)
                 }
@@ -142,20 +144,18 @@ struct OwnerProfileView: View {
                     .italic()
             } else {
                 ForEach(dogOwner.appointments.sorted(by: { $0.date > $1.date })) { appointment in
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text("Date: \(appointment.date.formatted(.dateTime.month().day().year()))")
-                            Text("Service: \(appointment.serviceType.rawValue)")
-                                .font(.caption)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Date: \(appointment.date.formatted(.dateTime.month().day().year()))")
+                        Text("Service: \(appointment.serviceType.rawValue)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        if let notes = appointment.notes, !notes.isEmpty {
+                            Text("Notes: \(notes)")
+                                .font(.caption2)
                                 .foregroundColor(.secondary)
-                            if let notes = appointment.notes, !notes.isEmpty {
-                                Text("Notes: \(notes)")
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                            }
                         }
-                        Spacer()
                     }
+                    .padding(.vertical, 4)
                 }
             }
         }
@@ -172,14 +172,12 @@ struct OwnerProfileView: View {
                 Text("Charge History")
                     .font(.headline)
                 Spacer()
-                Button(showCharges ? "Hide" : "Show") {
-                    withAnimation { showCharges.toggle() }
+                Button(action: { withAnimation { showCharges.toggle() } }) {
+                    Text(showCharges ? "Hide" : "Show")
+                        .font(.caption)
+                        .foregroundColor(.blue)
                 }
-                .font(.caption)
-                .foregroundColor(.blue)
-                Button(action: {
-                    showAddCharge = true
-                }) {
+                Button(action: { showAddCharge = true }) {
                     Image(systemName: "plus.circle")
                         .font(.headline)
                 }
@@ -192,13 +190,13 @@ struct OwnerProfileView: View {
             } else {
                 ForEach(dogOwner.charges.sorted(by: { $0.date > $1.date })) { charge in
                     HStack {
-                        VStack(alignment: .leading) {
+                        VStack(alignment: .leading, spacing: 4) {
                             Text("Date: \(charge.date.formatted(.dateTime.month().day().year()))")
                             Text("Type: \(charge.type.rawValue)")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                             if let notes = charge.notes, !notes.isEmpty {
-                                Text("Notes: \(notes)")
+                                Text("Notes: \(charge.notes)")
                                     .font(.caption2)
                                     .foregroundColor(.secondary)
                             }
@@ -208,6 +206,7 @@ struct OwnerProfileView: View {
                             .font(.subheadline)
                             .foregroundColor(.primary)
                     }
+                    .padding(.vertical, 4)
                 }
             }
         }

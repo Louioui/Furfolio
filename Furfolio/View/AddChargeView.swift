@@ -12,12 +12,12 @@ struct AddChargeView: View {
     @Environment(\.modelContext) private var modelContext
     let dogOwner: DogOwner
 
-    @State private var serviceType: ChargeType = .basic // Enum for service type
-    @State private var chargeAmount: Double? = nil // Amount charged for the service
-    @State private var chargeNotes = "" // Any additional notes about the charge
+    @State private var serviceType: ChargeType = .basic
+    @State private var chargeAmount: Double? = nil
+    @State private var chargeNotes = ""
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
-    @State private var isSaving = false // Prevent multiple save actions
+    @State private var isSaving = false
 
     var body: some View {
         NavigationView {
@@ -36,17 +36,24 @@ struct AddChargeView: View {
                         .keyboardType(.decimalPad)
                         .onChange(of: chargeAmount) { newValue in
                             if let newValue {
-                                chargeAmount = max(newValue, 0.0) // Ensure chargeAmount is non-negative
+                                chargeAmount = max(newValue, 0.0) // Ensure non-negative
                             }
                         }
 
                     // Notes Field
-                    TextField("Additional Notes (Optional)", text: $chargeNotes)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .autocapitalization(.sentences)
-                        .onChange(of: chargeNotes) { _ in
-                            limitNotesLength()
+                    VStack(alignment: .leading) {
+                        TextField("Additional Notes (Optional)", text: $chargeNotes)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .autocapitalization(.sentences)
+                            .onChange(of: chargeNotes) { _ in
+                                limitNotesLength()
+                            }
+                        if chargeNotes.count > 250 {
+                            Text("Notes must be 250 characters or less.")
+                                .font(.caption)
+                                .foregroundColor(.red)
                         }
+                    }
                 }
             }
             .navigationTitle("Add Charge")
@@ -66,7 +73,7 @@ struct AddChargeView: View {
                             showErrorAlert = true
                         }
                     }
-                    .disabled(!isFormValid() || isSaving) // Disable save if invalid or already saving
+                    .disabled(!isFormValid() || isSaving)
                 }
             }
             .alert("Invalid Charge", isPresented: $showErrorAlert) {
@@ -79,7 +86,7 @@ struct AddChargeView: View {
 
     // MARK: - Validation Methods
 
-    /// Validates the charge amount and ensures required fields are completed
+    /// Validates the charge and checks for errors
     private func validateCharge() -> Bool {
         if let amount = chargeAmount, amount <= 0.0 {
             errorMessage = "Charge amount must be greater than 0."
@@ -111,14 +118,14 @@ struct AddChargeView: View {
     private func saveChargeHistory() {
         let newCharge = Charge(
             date: Date(),
-            type: Charge.ServiceType(rawValue: serviceType.rawValue) ?? .custom, // Default to "Custom Service"
+            type: Charge.ServiceType(rawValue: serviceType.rawValue) ?? .custom,
             amount: chargeAmount ?? 0.0,
             dogOwner: dogOwner,
             notes: chargeNotes
         )
         withAnimation {
-            modelContext.insert(newCharge) // Insert the charge into the database
-            dogOwner.charges.append(newCharge) // Optionally append locally to dogOwner for UI update
+            modelContext.insert(newCharge)
+            dogOwner.charges.append(newCharge)
         }
     }
 }
@@ -130,14 +137,5 @@ enum ChargeType: String, CaseIterable {
     case basic = "Basic Package"
     case full = "Full Package"
     case custom = "Custom Service"
-}
-
-extension NumberFormatter {
-    static var currency: NumberFormatter {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "$"
-        return formatter
-    }
 }
 

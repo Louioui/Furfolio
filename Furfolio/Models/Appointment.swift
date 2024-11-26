@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftData
+import UserNotifications
 
 @Model
 final class Appointment: Identifiable {
@@ -17,7 +18,7 @@ final class Appointment: Identifiable {
     enum ServiceType: String, Codable, CaseIterable {
         case basic = "Basic Package"
         case full = "Full Package"
-        case custom = "Custom Package" // Added "Custom Package"
+        case custom = "Custom Package"
     }
     var serviceType: ServiceType
     var notes: String?
@@ -31,6 +32,7 @@ final class Appointment: Identifiable {
         case monthly = "Monthly"
     }
 
+    // MARK: - Initializer
     init(date: Date, dogOwner: DogOwner, serviceType: ServiceType, notes: String? = nil, isRecurring: Bool = false, recurrenceFrequency: RecurrenceFrequency? = nil) {
         self.id = UUID()
         self.date = date
@@ -53,6 +55,12 @@ final class Appointment: Identifiable {
         date <= Date()
     }
 
+    /// Time until the appointment in minutes
+    var timeUntil: Int? {
+        guard isValid else { return nil }
+        return Calendar.current.dateComponents([.minute], from: Date(), to: date).minute
+    }
+
     /// Format the appointment date for display
     var formattedDate: String {
         date.formatted(.dateTime.month().day().hour().minute())
@@ -61,8 +69,8 @@ final class Appointment: Identifiable {
     // MARK: - Methods
 
     /// Check for conflicts with another appointment
-    func conflictsWith(other: Appointment) -> Bool {
-        abs(self.date.timeIntervalSince(other.date)) < 3600 // Overlap within an hour
+    func conflictsWith(other: Appointment, bufferMinutes: Int = 60) -> Bool {
+        abs(self.date.timeIntervalSince(other.date)) < TimeInterval(bufferMinutes * 60)
     }
 
     /// Generate a series of recurring appointments based on the specified frequency
@@ -98,9 +106,31 @@ final class Appointment: Identifiable {
 
     /// Schedule a notification for the appointment
     func scheduleNotification() {
-        guard !isNotified else { return }
-        // Implement notification scheduling logic here, e.g., using UNUserNotificationCenter.
+        guard !isNotified, isValid else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = "Upcoming Appointment"
+        content.body = "You have a \(serviceType.rawValue) appointment for \(dogOwner.ownerName) at \(formattedDate)."
+        content.sound = .default
+
+        let triggerDate = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
+
+        let request = UNNotificationRequest(identifier: id.uuidString, content: content, trigger: trigger)
+
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Failed to schedule notification: \(error.localizedDescription)")
+            }
+        }
+
         isNotified = true
+    }
+
+    /// Cancel a scheduled notification
+    func cancelNotification() {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [id.uuidString])
+        isNotified = false
     }
 }
 

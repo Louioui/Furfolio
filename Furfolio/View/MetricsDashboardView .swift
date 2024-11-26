@@ -99,9 +99,16 @@ struct RevenueChartView: View {
                         x: .value("Date", $0.date),
                         y: .value("Revenue", $0.totalAmount)
                     )
+                    .interpolationMethod(.catmullRom)
                     .foregroundStyle(Color.blue)
                 }
                 .frame(height: 200)
+                .chartYAxis {
+                    AxisMarks(position: .leading)
+                }
+                .chartXAxis {
+                    AxisMarks(position: .bottom)
+                }
             }
         }
         .padding()

@@ -14,6 +14,7 @@ final class DailyRevenue: Identifiable {
     @Attribute(.unique) var date: Date
     var totalAmount: Double
 
+    // MARK: - Initializer
     init(date: Date, totalAmount: Double = 0.0) {
         self.id = UUID()
         self.date = date
@@ -24,24 +25,15 @@ final class DailyRevenue: Identifiable {
 
     /// Format the total revenue as currency
     var formattedTotal: String {
-        NumberFormatter.localizedString(from: NSNumber(value: totalAmount), number: .currency)
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = Locale.current.currency?.identifier ?? "USD"
+        return formatter.string(from: NSNumber(value: totalAmount)) ?? "$\(totalAmount)"
     }
 
     /// Format the revenue date for display
     var formattedDate: String {
         date.formatted(.dateTime.month().day().year())
-    }
-
-    /// Revenue for the current week
-    var weeklyRevenue: Double {
-        // Assume weekly revenue calculation
-        totalAmount * 7
-    }
-
-    /// Revenue for the current month
-    var monthlyRevenue: Double {
-        // Assume 30-day calculation for simplicity
-        totalAmount * 30
     }
 
     /// Determines if the record is for today
@@ -68,6 +60,25 @@ final class DailyRevenue: Identifiable {
         totalAmount = 0.0
     }
 
+    /// Calculate weekly revenue (last 7 days from the current date)
+    func calculateWeeklyRevenue(from revenues: [DailyRevenue]) -> Double {
+        let calendar = Calendar.current
+        let startDate = calendar.date(byAdding: .day, value: -6, to: date) ?? date
+        let range = startDate...date
+        return DailyRevenue.totalRevenue(for: range, revenues: revenues)
+    }
+
+    /// Calculate monthly revenue (all days in the current month)
+    func calculateMonthlyRevenue(from revenues: [DailyRevenue]) -> Double {
+        let calendar = Calendar.current
+        guard let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: date)),
+              let endOfMonth = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: startOfMonth) else {
+            return totalAmount
+        }
+        let range = startOfMonth...endOfMonth
+        return DailyRevenue.totalRevenue(for: range, revenues: revenues)
+    }
+
     // MARK: - Static Methods
 
     /// Calculate total revenue for a date range
@@ -86,6 +97,20 @@ final class DailyRevenue: Identifiable {
     /// Get the revenue record for today
     static func revenueForToday(from revenues: [DailyRevenue]) -> DailyRevenue? {
         revenues.first { Calendar.current.isDateInToday($0.date) }
+    }
+
+    /// Get total revenue grouped by week
+    static func weeklyRevenueSummary(from revenues: [DailyRevenue]) -> [(week: String, total: Double)] {
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: revenues) { revenue in
+            calendar.component(.weekOfYear, from: revenue.date)
+        }
+
+        return grouped.map { (week, revenues) in
+            let total = revenues.reduce(0) { $0 + $1.totalAmount }
+            return (week: "Week \(week)", total: total)
+        }
+        .sorted { $0.week < $1.week }
     }
 }
 
