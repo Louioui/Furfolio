@@ -37,6 +37,7 @@ struct ContentView: View {
         }
     }
 
+    // MARK: - Main Content View
     var mainContentView: some View {
         NavigationSplitView {
             List {
@@ -131,35 +132,50 @@ struct ContentView: View {
         }
     }
 
+    // MARK: - Login View
     var loginView: some View {
-        VStack {
+        VStack(spacing: 16) {
+            Text("Welcome to Furfolio")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+                .padding(.bottom, 20)
+
             TextField("Username", text: $username)
                 .padding()
                 .autocapitalization(.none)
+                .disableAutocorrection(true)
                 .border(Color(UIColor.separator))
-            
+                .background(Color(UIColor.secondarySystemBackground))
+                .cornerRadius(8)
+
             SecureField("Password", text: $password)
                 .padding()
                 .border(Color(UIColor.separator))
-            
-            Button("Login") {
-                authenticateUser()
+                .background(Color(UIColor.secondarySystemBackground))
+                .cornerRadius(8)
+
+            Button(action: authenticateUser) {
+                Text("Login")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue)
+                    .cornerRadius(8)
             }
-            .padding()
         }
+        .padding()
     }
 
+    // MARK: - Authentication Logic
     private func authenticateUser() {
         let storedUsername = "lvconcepcion"  // Secure storage retrieval should be used in production
         let storedPassword = "jesus2024"  // Secure hashing and storage should be used in production
-        
-        if username == storedUsername && password == storedPassword {
-            isAuthenticated = true
-        } else {
-            isAuthenticated = false
-        }
+
+        isAuthenticated = (username == storedUsername && password == storedPassword)
     }
 
+    // MARK: - Helper Views
     @ViewBuilder
     private func appointmentRow(for appointment: Appointment, owner: DogOwner) -> some View {
         VStack(alignment: .leading) {
@@ -177,12 +193,13 @@ struct ContentView: View {
         }
     }
 
+    // MARK: - Data Fetching
     private func fetchUpcomingAppointments() -> [Appointment] {
         let today = Date()
         let endDate = Calendar.current.date(byAdding: .day, value: 7, to: today) ?? today
-        let allAppointments = dogOwners.flatMap { $0.appointments }
-        let filteredAppointments = allAppointments.filter { $0.date > today && $0.date <= endDate }
-        return filteredAppointments.sorted { $0.date < $1.date }
+        return dogOwners.flatMap { $0.appointments }
+            .filter { $0.date > today && $0.date <= endDate }
+            .sorted { $0.date < $1.date }
     }
 
     private func findOwner(for appointment: Appointment) -> DogOwner? {
@@ -201,6 +218,7 @@ struct ContentView: View {
         }
     }
 
+    // MARK: - Data Management
     private func addDogOwner(ownerName: String, dogName: String, breed: String, contactInfo: String, address: String, notes: String, selectedImageData: Data?) {
         withAnimation {
             let newOwner = DogOwner(
@@ -209,7 +227,8 @@ struct ContentView: View {
                 breed: breed,
                 contactInfo: contactInfo,
                 address: address,
-                dogImage: selectedImageData, notes: notes
+                dogImage: selectedImageData,
+                notes: notes
             )
             modelContext.insert(newOwner)
         }
@@ -217,7 +236,7 @@ struct ContentView: View {
 
     private func deleteDogOwners(offsets: IndexSet) {
         withAnimation {
-            for index in offsets {
+            offsets.forEach { index in
                 modelContext.delete(dogOwners[index])
             }
         }

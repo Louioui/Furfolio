@@ -33,13 +33,13 @@ final class DogOwner: Identifiable {
         notes: String = ""
     ) {
         self.id = UUID()
-        self.ownerName = ownerName
-        self.dogName = dogName
-        self.breed = breed
-        self.contactInfo = contactInfo
-        self.address = address
+        self.ownerName = NSLocalizedString(ownerName, comment: "Owner's name")
+        self.dogName = NSLocalizedString(dogName, comment: "Dog's name")
+        self.breed = NSLocalizedString(breed, comment: "Dog breed")
+        self.contactInfo = NSLocalizedString(contactInfo, comment: "Contact information")
+        self.address = NSLocalizedString(address, comment: "Owner's address")
         self.dogImage = dogImage
-        self.notes = notes
+        self.notes = NSLocalizedString(notes, comment: "Additional notes")
     }
     
     // MARK: - Computed Properties
@@ -133,17 +133,15 @@ final class DogOwner: Identifiable {
 
     /// Add a new charge
     func addCharge(date: Date, type: String, amount: Double, notes: String = "") {
-        // Convert the string to `Charge.ServiceType`
-        let chargeType = Charge.ServiceType(rawValue: type) ?? .custom
-        let newCharge = Charge(date: date, type: chargeType, amount: amount, dogOwner: self, notes: notes)
+        let chargeType = Charge.ServiceType(rawValue: NSLocalizedString(type, comment: "Charge type")) ?? .custom
+        let newCharge = Charge(date: date, type: chargeType, amount: amount, dogOwner: self, notes: NSLocalizedString(notes, comment: "Charge notes"))
         charges.append(newCharge)
     }
 
     /// Add a new appointment
     func addAppointment(date: Date, serviceType: String, notes: String = "") {
-        let appointmentType = Appointment.ServiceType(rawValue: serviceType) ?? .custom
-        let newAppointment = Appointment(date: date, dogOwner: self, serviceType: appointmentType, notes: notes)
+        let appointmentType = Appointment.ServiceType(rawValue: NSLocalizedString(serviceType, comment: "Service type")) ?? .custom
+        let newAppointment = Appointment(date: date, dogOwner: self, serviceType: appointmentType, notes: NSLocalizedString(notes, comment: "Appointment notes"))
         appointments.append(newAppointment)
     }
 }
-

@@ -115,4 +115,3 @@ struct AppointmentReminderView: View {
         return triggerDate > Date()
     }
 }
-

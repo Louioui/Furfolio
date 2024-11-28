@@ -215,4 +215,3 @@ struct OwnerProfileView: View {
         .cornerRadius(10)
     }
 }
-

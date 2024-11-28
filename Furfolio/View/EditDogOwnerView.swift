@@ -191,4 +191,3 @@ struct EditDogOwnerView: View {
         return image.size.width > 100 && image.size.height > 100
     }
 }
-

@@ -253,4 +253,3 @@ struct DateRangePicker: View {
 enum DateRange {
     case lastWeek, lastMonth, custom
 }
-

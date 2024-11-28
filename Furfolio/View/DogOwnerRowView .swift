@@ -87,4 +87,3 @@ struct DogOwnerRowView: View {
         .accessibilityHint("Tap to view details about \(dogOwner.ownerName) and their dog.")
     }
 }
-

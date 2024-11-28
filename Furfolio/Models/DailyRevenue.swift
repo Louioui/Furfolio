@@ -4,7 +4,6 @@
 //
 //  Created by mac on 11/23/24.
 //
-
 import Foundation
 import SwiftData
 
@@ -113,5 +112,3 @@ final class DailyRevenue: Identifiable {
         .sorted { $0.week < $1.week }
     }
 }
-
-

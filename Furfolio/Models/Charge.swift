@@ -17,11 +17,15 @@ final class Charge: Identifiable {
     @Relationship(deleteRule: .nullify) var dogOwner: DogOwner
     var notes: String?
 
-    // Enum to define service types
+    // Enum to define service types with localization support
     enum ServiceType: String, Codable, CaseIterable {
         case basic = "Basic Package"
         case full = "Full Package"
         case custom = "Custom Package"
+
+        var localized: String {
+            NSLocalizedString(self.rawValue, comment: "")
+        }
     }
 
     // MARK: - Initializer
@@ -36,12 +40,12 @@ final class Charge: Identifiable {
 
     // MARK: - Computed Properties
 
-    /// Format the charge amount as currency
+    /// Format the charge amount as currency with localization
     var formattedAmount: String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
-        formatter.currencyCode = Locale.current.currency?.identifier ?? "USD"
-        return formatter.string(from: NSNumber(value: amount)) ?? "$\(amount)"
+        formatter.locale = Locale.current  // Ensures currency format is localized
+        return formatter.string(from: NSNumber(value: amount)) ?? "\(formatter.currencySymbol ?? "$")\(amount)"
     }
 
     /// Format the charge date for display
@@ -88,7 +92,10 @@ final class Charge: Identifiable {
 
     /// Calculate the total revenue for a given month and year
     static func totalRevenue(forMonth month: Int, year: Int, charges: [Charge]) -> Double {
-        charges.filter { $0.isInMonth(month, year: year) }.reduce(0) { $0 + $1.amount }
+        let total = charges.filter { $0.isInMonth(month, year: year) }.reduce(0) { $0 + $1.amount }
+        // Log or display this in a user-facing component
+        print(NSLocalizedString("Total revenue for \(month)/\(year): \(total)", comment: "Total revenue log message"))
+        return total
     }
 
     /// Filter charges based on a specific dog owner
@@ -110,4 +117,3 @@ final class Charge: Identifiable {
         return categorized
     }
 }
-

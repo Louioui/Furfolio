@@ -19,6 +19,17 @@ final class Appointment: Identifiable {
         case basic = "Basic Package"
         case full = "Full Package"
         case custom = "Custom Package"
+
+        var localized: String {
+            switch self {
+            case .basic:
+                return NSLocalizedString("Basic Package", comment: "Basic service package")
+            case .full:
+                return NSLocalizedString("Full Package", comment: "Full service package")
+            case .custom:
+                return NSLocalizedString("Custom Package", comment: "Custom service package")
+            }
+        }
     }
     var serviceType: ServiceType
     var notes: String?
@@ -30,6 +41,17 @@ final class Appointment: Identifiable {
         case daily = "Daily"
         case weekly = "Weekly"
         case monthly = "Monthly"
+
+        var localized: String {
+            switch self {
+            case .daily:
+                return NSLocalizedString("Daily", comment: "Daily recurrence")
+            case .weekly:
+                return NSLocalizedString("Weekly", comment: "Weekly recurrence")
+            case .monthly:
+                return NSLocalizedString("Monthly", comment: "Monthly recurrence")
+            }
+        }
     }
 
     // MARK: - Initializer
@@ -110,7 +132,7 @@ final class Appointment: Identifiable {
 
         let content = UNMutableNotificationContent()
         content.title = "Upcoming Appointment"
-        content.body = "You have a \(serviceType.rawValue) appointment for \(dogOwner.ownerName) at \(formattedDate)."
+        content.body = "You have a \(serviceType.localized) appointment for \(dogOwner.ownerName) at \(formattedDate)."
         content.sound = .default
 
         let triggerDate = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: date)
@@ -133,4 +155,3 @@ final class Appointment: Identifiable {
         isNotified = false
     }
 }
-

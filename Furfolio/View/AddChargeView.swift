@@ -22,17 +22,17 @@ struct AddChargeView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("Charge Information")) {
+                Section(header: Text(NSLocalizedString("Charge Information", comment: "Header for charge information section"))) {
                     // Service Type Picker
-                    Picker("Service Type", selection: $serviceType) {
+                    Picker(NSLocalizedString("Service Type", comment: "Picker label for service type"), selection: $serviceType) {
                         ForEach(ChargeType.allCases, id: \.self) { type in
-                            Text(type.rawValue)
+                            Text(type.localized)
                         }
                     }
                     .pickerStyle(MenuPickerStyle())
 
                     // Charge Amount Input
-                    TextField("Amount Charged", value: $chargeAmount, format: .currency(code: "USD"))
+                    TextField(NSLocalizedString("Amount Charged", comment: "Text field label for charge amount"), value: $chargeAmount, format: .currency(code: Locale.current.currencyCode ?? "USD"))
                         .keyboardType(.decimalPad)
                         .onChange(of: chargeAmount) { newValue in
                             if let newValue {
@@ -42,29 +42,29 @@ struct AddChargeView: View {
 
                     // Notes Field
                     VStack(alignment: .leading) {
-                        TextField("Additional Notes (Optional)", text: $chargeNotes)
+                        TextField(NSLocalizedString("Additional Notes (Optional)", comment: "Text field label for additional notes"), text: $chargeNotes)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .autocapitalization(.sentences)
                             .onChange(of: chargeNotes) { _ in
                                 limitNotesLength()
                             }
                         if chargeNotes.count > 250 {
-                            Text("Notes must be 250 characters or less.")
+                            Text(NSLocalizedString("Notes must be 250 characters or less.", comment: "Warning for note length"))
                                 .font(.caption)
                                 .foregroundColor(.red)
                         }
                     }
                 }
             }
-            .navigationTitle("Add Charge")
+            .navigationTitle(NSLocalizedString("Add Charge", comment: "Navigation title for Add Charge view"))
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
+                    Button(NSLocalizedString("Cancel", comment: "Cancel button label")) {
                         dismiss()
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
+                    Button(NSLocalizedString("Save", comment: "Save button label")) {
                         if validateCharge() {
                             isSaving = true
                             saveChargeHistory()
@@ -76,8 +76,8 @@ struct AddChargeView: View {
                     .disabled(!isFormValid() || isSaving)
                 }
             }
-            .alert("Invalid Charge", isPresented: $showErrorAlert) {
-                Button("OK", role: .cancel) {}
+            .alert(NSLocalizedString("Invalid Charge", comment: "Alert title for invalid charge"), isPresented: $showErrorAlert) {
+                Button(NSLocalizedString("OK", comment: "OK button label"), role: .cancel) {}
             } message: {
                 Text(errorMessage)
             }
@@ -89,11 +89,11 @@ struct AddChargeView: View {
     /// Validates the charge and checks for errors
     private func validateCharge() -> Bool {
         if let amount = chargeAmount, amount <= 0.0 {
-            errorMessage = "Charge amount must be greater than 0."
+            errorMessage = NSLocalizedString("Charge amount must be greater than 0.", comment: "Error message for zero or negative charge amount")
             return false
         }
         if serviceType.rawValue.isEmpty {
-            errorMessage = "Please select a valid service type."
+            errorMessage = NSLocalizedString("Please select a valid service type.", comment: "Error message for unselected service type")
             return false
         }
         return true
@@ -137,5 +137,8 @@ enum ChargeType: String, CaseIterable {
     case basic = "Basic Package"
     case full = "Full Package"
     case custom = "Custom Service"
-}
 
+    var localized: String {
+        NSLocalizedString(self.rawValue, comment: "")
+    }
+}
