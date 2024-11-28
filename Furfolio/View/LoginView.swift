@@ -38,8 +38,8 @@ struct LoginView: View {
     
     func authenticateUser(username: String, password: String) {
         // Here, replace with your actual logic to check credentials
-        let storedUsername = "admin" // Should be securely stored
-        let storedPassword = "password123" // Should be securely hashed and stored
+        let storedUsername = "lvconcepcion" // Should be securely stored
+        let storedPassword = "jesus2024" // Should be securely hashed and stored
         
         if username == storedUsername && password == storedPassword {
             isAuthenticated = true
