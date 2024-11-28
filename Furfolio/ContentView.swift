@@ -14,6 +14,11 @@ struct ContentView: View {
     @Query private var dogOwners: [DogOwner]
     @Query private var dailyRevenues: [DailyRevenue]
 
+    // Authentication states
+    @State private var isAuthenticated = false
+    @State private var username: String = ""
+    @State private var password: String = ""
+
     // Search functionality
     @State private var searchText = ""
 
@@ -25,20 +30,24 @@ struct ContentView: View {
     @State private var selectedDogOwner: DogOwner?
 
     var body: some View {
+        if isAuthenticated {
+            mainContentView
+        } else {
+            loginView
+        }
+    }
+
+    var mainContentView: some View {
         NavigationSplitView {
-            // Sidebar List View
             List {
-                // Metrics Section
                 Section(header: Text("Business Insights")) {
                     Button(action: { isShowingMetricsView = true }) {
                         Label("View Metrics Dashboard", systemImage: "chart.bar.xaxis")
                     }
                 }
 
-                // Upcoming Appointments Section
                 Section(header: Text("Upcoming Appointments")) {
                     let upcomingAppointments = fetchUpcomingAppointments()
-
                     if upcomingAppointments.isEmpty {
                         Text("No upcoming appointments.")
                             .foregroundColor(.gray)
@@ -56,10 +65,8 @@ struct ContentView: View {
                     }
                 }
 
-                // Dog Owners Section
                 Section(header: Text("Dog Owners")) {
                     let filteredDogOwners = filterDogOwners()
-
                     if filteredDogOwners.isEmpty {
                         Text("No dog owners found.")
                             .foregroundColor(.gray)
@@ -80,7 +87,6 @@ struct ContentView: View {
             .searchable(text: $searchText)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    // "+" button to add a new Dog Owner
                     Button(action: { isShowingAddOwnerSheet = true }) {
                         Label("Add Dog Owner", systemImage: "plus")
                     }
@@ -125,9 +131,35 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - Helper Views
+    var loginView: some View {
+        VStack {
+            TextField("Username", text: $username)
+                .padding()
+                .autocapitalization(.none)
+                .border(Color(UIColor.separator))
+            
+            SecureField("Password", text: $password)
+                .padding()
+                .border(Color(UIColor.separator))
+            
+            Button("Login") {
+                authenticateUser()
+            }
+            .padding()
+        }
+    }
 
-    /// Builds a row for an appointment
+    private func authenticateUser() {
+        let storedUsername = "lvconcepcion"  // Secure storage retrieval should be used in production
+        let storedPassword = "jesus2024"  // Secure hashing and storage should be used in production
+        
+        if username == storedUsername && password == storedPassword {
+            isAuthenticated = true
+        } else {
+            isAuthenticated = false
+        }
+    }
+
     @ViewBuilder
     private func appointmentRow(for appointment: Appointment, owner: DogOwner) -> some View {
         VStack(alignment: .leading) {
@@ -145,27 +177,20 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - Helper Functions
-
-    /// Filters upcoming appointments within the next 7 days
     private func fetchUpcomingAppointments() -> [Appointment] {
         let today = Date()
         let endDate = Calendar.current.date(byAdding: .day, value: 7, to: today) ?? today
-
         let allAppointments = dogOwners.flatMap { $0.appointments }
         let filteredAppointments = allAppointments.filter { $0.date > today && $0.date <= endDate }
         return filteredAppointments.sorted { $0.date < $1.date }
     }
 
-    /// Finds the owner for a given appointment
     private func findOwner(for appointment: Appointment) -> DogOwner? {
         dogOwners.first { $0.appointments.contains(appointment) }
     }
 
-    /// Filters dog owners based on the search text
     private func filterDogOwners() -> [DogOwner] {
         let lowercasedSearchText = searchText.lowercased()
-
         return dogOwners.filter { owner in
             searchText.isEmpty ||
             owner.ownerName.lowercased().contains(lowercasedSearchText) ||
@@ -176,7 +201,6 @@ struct ContentView: View {
         }
     }
 
-    /// Adds a new Dog Owner with all details and optional image
     private func addDogOwner(ownerName: String, dogName: String, breed: String, contactInfo: String, address: String, notes: String, selectedImageData: Data?) {
         withAnimation {
             let newOwner = DogOwner(
@@ -191,7 +215,6 @@ struct ContentView: View {
         }
     }
 
-    /// Deletes selected Dog Owners
     private func deleteDogOwners(offsets: IndexSet) {
         withAnimation {
             for index in offsets {
@@ -200,4 +223,3 @@ struct ContentView: View {
         }
     }
 }
-
