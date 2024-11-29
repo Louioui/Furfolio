@@ -42,39 +42,39 @@ struct EditDogOwnerView: View {
         NavigationView {
             Form {
                 // Owner Information Section
-                Section(header: Text("Owner Information")) {
-                    TextField("Owner Name", text: $ownerName)
+                Section(header: Text(NSLocalizedString("Owner Information", comment: "Header for owner information section"))) {
+                    TextField(NSLocalizedString("Owner Name", comment: "Placeholder for owner name"), text: $ownerName)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .autocapitalization(.words)
 
-                    TextField("Contact Info (Optional)", text: $contactInfo)
+                    TextField(NSLocalizedString("Contact Info (Optional)", comment: "Placeholder for contact information"), text: $contactInfo)
                         .keyboardType(.phonePad)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
 
-                    TextField("Address (Optional)", text: $address)
+                    TextField(NSLocalizedString("Address (Optional)", comment: "Placeholder for address"), text: $address)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .autocapitalization(.words)
                 }
 
                 // Dog Information Section
-                Section(header: Text("Dog Information")) {
-                    TextField("Dog Name", text: $dogName)
+                Section(header: Text(NSLocalizedString("Dog Information", comment: "Header for dog information section"))) {
+                    TextField(NSLocalizedString("Dog Name", comment: "Placeholder for dog name"), text: $dogName)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .autocapitalization(.words)
 
-                    TextField("Breed", text: $breed)
+                    TextField(NSLocalizedString("Breed", comment: "Placeholder for breed"), text: $breed)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .autocapitalization(.words)
 
                     VStack(alignment: .leading) {
-                        TextField("Notes (Optional)", text: $notes)
+                        TextField(NSLocalizedString("Notes (Optional)", comment: "Placeholder for notes"), text: $notes)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .autocapitalization(.sentences)
                             .onChange(of: notes) { _ in
                                 limitNotesLength()
                             }
                         if notes.count > 250 {
-                            Text("Notes must be 250 characters or less.")
+                            Text(NSLocalizedString("Notes must be 250 characters or less.", comment: "Warning for note length"))
                                 .font(.caption)
                                 .foregroundColor(.red)
                         }
@@ -82,7 +82,7 @@ struct EditDogOwnerView: View {
                 }
 
                 // Dog Image Section
-                Section(header: Text("Dog Image")) {
+                Section(header: Text(NSLocalizedString("Dog Image", comment: "Header for dog image section"))) {
                     PhotosPicker(
                         selection: $selectedImage,
                         matching: .images,
@@ -96,17 +96,17 @@ struct EditDogOwnerView: View {
                                     .frame(width: 100, height: 100)
                                     .clipShape(Circle())
                                     .overlay(Circle().stroke(Color.gray, lineWidth: 1))
-                                    .accessibilityLabel("Selected dog image")
+                                    .accessibilityLabel(NSLocalizedString("Selected dog image", comment: "Accessibility label for selected dog image"))
                             } else {
                                 Image(systemName: "photo.circle.fill")
                                     .resizable()
                                     .scaledToFit()
                                     .frame(width: 100, height: 100)
                                     .foregroundColor(.gray)
-                                    .accessibilityLabel("Default dog image")
+                                    .accessibilityLabel(NSLocalizedString("Default dog image", comment: "Accessibility label for default dog image"))
                             }
                             Spacer()
-                            Text("Select an Image")
+                            Text(NSLocalizedString("Select an Image", comment: "Button label for selecting an image"))
                         }
                     }
                     .onChange(of: selectedImage) { newValue in
@@ -122,25 +122,25 @@ struct EditDogOwnerView: View {
                             }
                         }
                     }
-                    .alert("Invalid Image", isPresented: $showImageError) {
-                        Button("OK", role: .cancel) {}
+                    .alert(NSLocalizedString("Invalid Image", comment: "Alert title for invalid image"), isPresented: $showImageError) {
+                        Button(NSLocalizedString("OK", comment: "Button label for alert confirmation"), role: .cancel) {}
                     } message: {
-                        Text("Please select an image under 5MB with appropriate dimensions.")
+                        Text(NSLocalizedString("Please select an image under 5MB with appropriate dimensions.", comment: "Message for invalid image dimensions or size"))
                     }
                 }
             }
-            .navigationTitle("Edit Dog Owner")
+            .navigationTitle(NSLocalizedString("Edit Dog Owner", comment: "Navigation title for edit dog owner view"))
             .toolbar {
                 // Cancel Button
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
+                    Button(NSLocalizedString("Cancel", comment: "Button label for cancel")) {
                         dismiss()
                     }
                 }
 
                 // Save Button
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
+                    Button(NSLocalizedString("Save", comment: "Button label for save")) {
                         if validateFields() {
                             isSaving = true
                             let updatedOwner = DogOwner(
@@ -161,10 +161,10 @@ struct EditDogOwnerView: View {
                     .disabled(isSaving || !validateFields())
                 }
             }
-            .alert("Missing Required Fields", isPresented: $showValidationError) {
-                Button("OK", role: .cancel) {}
+            .alert(NSLocalizedString("Missing Required Fields", comment: "Alert title for missing required fields"), isPresented: $showValidationError) {
+                Button(NSLocalizedString("OK", comment: "Button label for alert confirmation"), role: .cancel) {}
             } message: {
-                Text("Please fill out the required fields: Owner Name, Dog Name, and Breed.")
+                Text(NSLocalizedString("Please fill out the required fields: Owner Name, Dog Name, and Breed.", comment: "Message for missing required fields"))
             }
         }
     }

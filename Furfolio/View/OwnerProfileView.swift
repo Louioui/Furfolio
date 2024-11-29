@@ -38,7 +38,7 @@ struct OwnerProfileView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Owner Profile")
+            .navigationTitle(NSLocalizedString("Owner Profile", comment: "Title for Owner Profile view"))
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
@@ -47,7 +47,7 @@ struct OwnerProfileView: View {
                         Image(systemName: "pencil")
                             .font(.title2)
                     }
-                    .accessibilityLabel("Edit Owner Profile")
+                    .accessibilityLabel(NSLocalizedString("Edit Owner Profile", comment: "Accessibility label for Edit Owner Profile button"))
                 }
             }
             .sheet(isPresented: $isEditing) {
@@ -68,16 +68,16 @@ struct OwnerProfileView: View {
     @ViewBuilder
     private func ownerInfoSection() -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(dogOwner.ownerName)
+            Text(dogOwner.ownerName ?? "Unknown Owner")
                 .font(.title)
                 .bold()
-            if !dogOwner.contactInfo.isEmpty {
-                Text("Contact: \(dogOwner.contactInfo)")
+            if !(dogOwner.contactInfo ?? "").isEmpty {
+                Text(String(format: NSLocalizedString("Contact: %@", comment: "Contact information label"), dogOwner.contactInfo ?? ""))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
-            if !dogOwner.address.isEmpty {
-                Text("Address: \(dogOwner.address)")
+            if !(dogOwner.address ?? "").isEmpty {
+                Text(String(format: NSLocalizedString("Address: %@", comment: "Address information label"), dogOwner.address ?? ""))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -91,12 +91,12 @@ struct OwnerProfileView: View {
     @ViewBuilder
     private func dogInfoSection() -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Dog Info")
+            Text(NSLocalizedString("Dog Info", comment: "Header for Dog Info section"))
                 .font(.headline)
-            Text("Name: \(dogOwner.dogName)")
-            Text("Breed: \(dogOwner.breed)")
-            if !dogOwner.notes.isEmpty {
-                Text("Notes: \(dogOwner.notes)")
+            Text(String(format: NSLocalizedString("Name: %@", comment: "Dog name label"), dogOwner.dogName ?? "Unknown Dog"))
+            Text(String(format: NSLocalizedString("Breed: %@", comment: "Dog breed label"), dogOwner.breed ?? "Unknown Breed"))
+            if !(dogOwner.notes ?? "").isEmpty {
+                Text(String(format: NSLocalizedString("Notes: %@", comment: "Dog notes label"), dogOwner.notes ?? ""))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -109,7 +109,7 @@ struct OwnerProfileView: View {
                     .overlay(Circle().stroke(Color.gray, lineWidth: 1))
                     .padding(.top)
             } else {
-                Text("No image available")
+                Text(NSLocalizedString("No image available", comment: "Message for missing dog image"))
                     .font(.caption)
                     .foregroundColor(.gray)
             }
@@ -124,11 +124,11 @@ struct OwnerProfileView: View {
     private func appointmentHistorySection() -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Appointment History")
+                Text(NSLocalizedString("Appointment History", comment: "Header for Appointment History section"))
                     .font(.headline)
                 Spacer()
                 Button(action: { withAnimation { showAppointments.toggle() } }) {
-                    Text(showAppointments ? "Hide" : "Show")
+                    Text(showAppointments ? NSLocalizedString("Hide", comment: "Hide button label") : NSLocalizedString("Show", comment: "Show button label"))
                         .font(.caption)
                         .foregroundColor(.blue)
                 }
@@ -139,18 +139,18 @@ struct OwnerProfileView: View {
                 .foregroundColor(.blue)
             }
             if dogOwner.appointments.isEmpty {
-                Text("No appointments available.")
+                Text(NSLocalizedString("No appointments available.", comment: "Message for no appointments"))
                     .foregroundColor(.gray)
                     .italic()
             } else {
                 ForEach(dogOwner.appointments.sorted(by: { $0.date > $1.date })) { appointment in
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Date: \(appointment.date.formatted(.dateTime.month().day().year()))")
-                        Text("Service: \(appointment.serviceType.rawValue)")
+                        Text(String(format: NSLocalizedString("Date: %@", comment: "Appointment date label"), appointment.date.formatted(.dateTime.month().day().year())))
+                        Text(String(format: NSLocalizedString("Service: %@", comment: "Service type label"), appointment.serviceType.rawValue))
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        if let notes = appointment.notes, !notes.isEmpty {
-                            Text("Notes: \(notes)")
+                        if let notes = appointment.notes, !(notes).isEmpty {
+                            Text(String(format: NSLocalizedString("Notes: %@", comment: "Appointment notes label"), notes))
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
                         }
@@ -169,11 +169,11 @@ struct OwnerProfileView: View {
     private func chargeHistorySection() -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Charge History")
+                Text(NSLocalizedString("Charge History", comment: "Header for Charge History section"))
                     .font(.headline)
                 Spacer()
                 Button(action: { withAnimation { showCharges.toggle() } }) {
-                    Text(showCharges ? "Hide" : "Show")
+                    Text(showCharges ? NSLocalizedString("Hide", comment: "Hide button label") : NSLocalizedString("Show", comment: "Show button label"))
                         .font(.caption)
                         .foregroundColor(.blue)
                 }
@@ -184,25 +184,25 @@ struct OwnerProfileView: View {
                 .foregroundColor(.blue)
             }
             if dogOwner.charges.isEmpty {
-                Text("No charges recorded.")
+                Text(NSLocalizedString("No charges recorded.", comment: "Message for no charges"))
                     .foregroundColor(.gray)
                     .italic()
             } else {
                 ForEach(dogOwner.charges.sorted(by: { $0.date > $1.date })) { charge in
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Date: \(charge.date.formatted(.dateTime.month().day().year()))")
-                            Text("Type: \(charge.type.rawValue)")
+                            Text(String(format: NSLocalizedString("Date: %@", comment: "Charge date label"), charge.date.formatted(.dateTime.month().day().year())))
+                            Text(String(format: NSLocalizedString("Type: %@", comment: "Charge type label"), charge.type.rawValue))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
-                            if let notes = charge.notes, !notes.isEmpty {
-                                Text("Notes: \(charge.notes)")
+                            if let notes = charge.notes, !(notes).isEmpty {
+                                Text(String(format: NSLocalizedString("Notes: %@", comment: "Charge notes label"), notes))
                                     .font(.caption2)
                                     .foregroundColor(.secondary)
                             }
                         }
                         Spacer()
-                        Text("\(charge.amount.formatted(.currency(code: "USD")))")
+                        Text(charge.amount.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD")))
                             .font(.subheadline)
                             .foregroundColor(.primary)
                     }

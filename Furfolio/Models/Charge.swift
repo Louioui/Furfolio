@@ -16,6 +16,7 @@ final class Charge: Identifiable {
     var amount: Double
     @Relationship(deleteRule: .nullify) var dogOwner: DogOwner
     var notes: String?
+    var petBadges: [String] // Track badges associated with this charge (e.g., behavior notes)
 
     // Enum to define service types with localization support
     enum ServiceType: String, Codable, CaseIterable {
@@ -24,18 +25,19 @@ final class Charge: Identifiable {
         case custom = "Custom Package"
 
         var localized: String {
-            NSLocalizedString(self.rawValue, comment: "")
+            NSLocalizedString(self.rawValue, comment: "Localized description of \(self.rawValue)")
         }
     }
 
     // MARK: - Initializer
-    init(date: Date, type: ServiceType, amount: Double, dogOwner: DogOwner, notes: String? = nil) {
+    init(date: Date, type: ServiceType, amount: Double, dogOwner: DogOwner, notes: String? = nil, petBadges: [String] = []) {
         self.id = UUID()
         self.date = date
         self.type = type
         self.amount = max(0, amount) // Ensure no negative amount
         self.dogOwner = dogOwner
         self.notes = notes
+        self.petBadges = petBadges
     }
 
     // MARK: - Computed Properties
@@ -77,6 +79,20 @@ final class Charge: Identifiable {
     func applyDiscount(_ percentage: Double) {
         guard percentage > 0 && percentage <= 100 else { return }
         amount -= amount * (percentage / 100)
+    }
+
+    /// Add a badge to the charge for pet behavior tracking
+    func addBadge(_ badge: String) {
+        guard !petBadges.contains(badge) else { return }
+        petBadges.append(badge)
+    }
+
+    /// Analyze pet behavior based on charge notes (placeholder logic)
+    func analyzeBehavior() -> String {
+        if let notes = notes, notes.lowercased().contains("anxious") {
+            return NSLocalizedString("Behavioral analysis: Pet is anxious during appointments.", comment: "Behavioral analysis result")
+        }
+        return NSLocalizedString("Behavioral analysis: No significant behavioral notes.", comment: "Behavioral analysis result")
     }
 
     // MARK: - Static Methods

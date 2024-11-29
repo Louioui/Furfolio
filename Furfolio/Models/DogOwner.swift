@@ -21,7 +21,7 @@ final class DogOwner: Identifiable {
     var notes: String
     @Relationship(deleteRule: .cascade) var appointments: [Appointment] = []
     @Relationship(deleteRule: .cascade) var charges: [Charge] = []
-    
+
     // MARK: - Initializer
     init(
         ownerName: String,
@@ -41,15 +41,15 @@ final class DogOwner: Identifiable {
         self.dogImage = dogImage
         self.notes = NSLocalizedString(notes, comment: "Additional notes")
     }
-    
+
     // MARK: - Computed Properties
-    
+
     /// Check if the owner has upcoming appointments
     var hasUpcomingAppointments: Bool {
         let today = Calendar.current.startOfDay(for: Date())
         return appointments.contains { $0.date > today }
     }
-    
+
     /// Get the owner's next appointment
     var nextAppointment: Appointment? {
         appointments
@@ -57,12 +57,12 @@ final class DogOwner: Identifiable {
             .sorted { $0.date < $1.date }
             .first
     }
-    
+
     /// Calculate the total charges for the owner
     var totalCharges: Double {
         charges.reduce(0) { $0 + $1.amount }
     }
-    
+
     /// Determine if the owner is active
     var isActive: Bool {
         hasUpcomingAppointments || recentActivity
@@ -74,12 +74,12 @@ final class DogOwner: Identifiable {
         return charges.contains { $0.date >= thirtyDaysAgo } ||
                appointments.contains { $0.date >= thirtyDaysAgo }
     }
-    
+
     /// Generate searchable text for the owner
     var searchableText: String {
         "\(ownerName) \(dogName) \(breed) \(contactInfo) \(address) \(notes)"
     }
-    
+
     /// Convert the dog's image data to `UIImage`
     var dogUIImage: UIImage? {
         guard let data = dogImage else { return nil }
@@ -97,7 +97,7 @@ final class DogOwner: Identifiable {
     }
 
     // MARK: - Methods
-    
+
     /// Validate the dog's image for size and format
     func isValidImage() -> Bool {
         guard let data = dogImage, let image = UIImage(data: data) else { return false }

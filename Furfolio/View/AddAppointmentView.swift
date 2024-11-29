@@ -125,7 +125,7 @@ struct AddAppointmentView: View {
     private func scheduleReminder(for appointment: Appointment) {
         let content = UNMutableNotificationContent()
         content.title = NSLocalizedString("Upcoming Appointment", comment: "Reminder title")
-        content.body = "Appointment with \(dogOwner.ownerName) on \(appointment.formattedDate)"
+        content.body = String(format: NSLocalizedString("Appointment with %@ on %@", comment: "Reminder body"), dogOwner.ownerName, appointment.formattedDate)
         content.sound = .default
 
         let triggerDate = Calendar.current.date(byAdding: .minute, value: -30, to: appointment.date) ?? appointment.date

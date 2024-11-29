@@ -20,7 +20,7 @@ struct DogOwnerRowView: View {
                     .frame(width: 50, height: 50)
                     .clipShape(Circle())
                     .overlay(Circle().stroke(Color.gray, lineWidth: 1))
-                    .accessibilityLabel("\(dogOwner.ownerName)'s dog image")
+                    .accessibilityLabel(String(format: NSLocalizedString("%@'s dog image", comment: "Accessibility label for dog image"), dogOwner.ownerName))
             } else {
                 Circle()
                     .fill(Color.gray.opacity(0.4))
@@ -31,7 +31,7 @@ struct DogOwnerRowView: View {
                             .font(.headline)
                             .foregroundColor(.white)
                     )
-                    .accessibilityLabel("\(dogOwner.ownerName)'s initials")
+                    .accessibilityLabel(String(format: NSLocalizedString("%@'s initials", comment: "Accessibility label for initials"), dogOwner.ownerName))
             }
 
             // Owner and Dog Details
@@ -45,13 +45,13 @@ struct DogOwnerRowView: View {
                     .foregroundColor(.secondary)
 
                 if !dogOwner.breed.isEmpty {
-                    Text("Breed: \(dogOwner.breed)")
+                    Text(String(format: NSLocalizedString("Breed: %@", comment: "Label for dog breed"), dogOwner.breed))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
 
                 if !dogOwner.notes.isEmpty {
-                    Text("Notes: \(dogOwner.notes)")
+                    Text(String(format: NSLocalizedString("Notes: %@", comment: "Label for notes"), dogOwner.notes))
                         .font(.caption2)
                         .foregroundColor(.secondary)
                         .italic()
@@ -61,22 +61,22 @@ struct DogOwnerRowView: View {
 
             // Upcoming Appointments Tag
             if dogOwner.hasUpcomingAppointments {
-                Text("Upcoming")
+                Text(NSLocalizedString("Upcoming", comment: "Label for upcoming appointments"))
                     .font(.caption2)
                     .padding(6)
                     .background(Color.blue.opacity(0.2))
                     .cornerRadius(8)
                     .foregroundColor(.blue)
-                    .accessibilityLabel("Upcoming appointments")
+                    .accessibilityLabel(NSLocalizedString("Upcoming appointments", comment: "Accessibility label for upcoming appointments tag"))
             }
 
             // Total Charges
             if dogOwner.totalCharges > 0 {
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text("$\(dogOwner.totalCharges, specifier: "%.2f")")
+                    Text(dogOwner.totalCharges.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD")))
                         .font(.caption)
                         .foregroundColor(.green)
-                        .accessibilityLabel("Total charges: \(dogOwner.totalCharges.formatted(.currency(code: "USD")))")
+                        .accessibilityLabel(String(format: NSLocalizedString("Total charges: %@", comment: "Accessibility label for total charges"), dogOwner.totalCharges.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD"))))
                 }
                 .padding(.leading, 8)
             }
@@ -84,6 +84,6 @@ struct DogOwnerRowView: View {
         .padding(.vertical, 8)
         .contentShape(Rectangle()) // Ensure tap area includes entire row
         .accessibilityElement(children: .combine)
-        .accessibilityHint("Tap to view details about \(dogOwner.ownerName) and their dog.")
+        .accessibilityHint(String(format: NSLocalizedString("Tap to view details about %@ and their dog.", comment: "Accessibility hint for dog owner row"), dogOwner.ownerName))
     }
 }

@@ -4,6 +4,7 @@
 //
 //  Created by mac on 11/23/24.
 //
+
 import Foundation
 import SwiftData
 
@@ -78,6 +79,13 @@ final class DailyRevenue: Identifiable {
         return DailyRevenue.totalRevenue(for: range, revenues: revenues)
     }
 
+    /// Calculate revenue for a specific date
+    func calculateRevenue(for specificDate: Date, from revenues: [DailyRevenue]) -> Double {
+        let calendar = Calendar.current
+        return revenues.filter { calendar.isDate($0.date, inSameDayAs: specificDate) }
+            .reduce(0) { $0 + $1.totalAmount }
+    }
+
     // MARK: - Static Methods
 
     /// Calculate total revenue for a date range
@@ -107,7 +115,7 @@ final class DailyRevenue: Identifiable {
 
         return grouped.map { (week, revenues) in
             let total = revenues.reduce(0) { $0 + $1.totalAmount }
-            return (week: "Week \(week)", total: total)
+            return (week: NSLocalizedString("Week \(week)", comment: "Weekly revenue summary"), total: total)
         }
         .sorted { $0.week < $1.week }
     }

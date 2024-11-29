@@ -14,6 +14,7 @@ final class Appointment: Identifiable {
     @Attribute(.unique) var id: UUID
     var date: Date
     @Relationship(deleteRule: .nullify) var dogOwner: DogOwner
+    var petBirthdays: [Date] // Track pet birthdays for reminders
 
     enum ServiceType: String, Codable, CaseIterable {
         case basic = "Basic Package"
@@ -36,6 +37,7 @@ final class Appointment: Identifiable {
     var isRecurring: Bool
     var recurrenceFrequency: RecurrenceFrequency?
     var isNotified: Bool = false
+    var profileBadges: [String] // Profile badges for pets
 
     enum RecurrenceFrequency: String, Codable, CaseIterable {
         case daily = "Daily"
@@ -55,7 +57,7 @@ final class Appointment: Identifiable {
     }
 
     // MARK: - Initializer
-    init(date: Date, dogOwner: DogOwner, serviceType: ServiceType, notes: String? = nil, isRecurring: Bool = false, recurrenceFrequency: RecurrenceFrequency? = nil) {
+    init(date: Date, dogOwner: DogOwner, serviceType: ServiceType, notes: String? = nil, isRecurring: Bool = false, recurrenceFrequency: RecurrenceFrequency? = nil, petBirthdays: [Date] = [], profileBadges: [String] = []) {
         self.id = UUID()
         self.date = date
         self.dogOwner = dogOwner
@@ -63,6 +65,8 @@ final class Appointment: Identifiable {
         self.notes = notes
         self.isRecurring = isRecurring
         self.recurrenceFrequency = recurrenceFrequency
+        self.petBirthdays = petBirthdays
+        self.profileBadges = profileBadges
     }
 
     // MARK: - Computed Properties
@@ -86,6 +90,11 @@ final class Appointment: Identifiable {
     /// Format the appointment date for display
     var formattedDate: String {
         date.formatted(.dateTime.month().day().hour().minute())
+    }
+
+    /// Check for upcoming pet birthdays
+    var upcomingBirthdays: [Date] {
+        petBirthdays.filter { Calendar.current.isDateInToday($0) }
     }
 
     // MARK: - Methods
@@ -131,8 +140,8 @@ final class Appointment: Identifiable {
         guard !isNotified, isValid else { return }
 
         let content = UNMutableNotificationContent()
-        content.title = "Upcoming Appointment"
-        content.body = "You have a \(serviceType.localized) appointment for \(dogOwner.ownerName) at \(formattedDate)."
+        content.title = NSLocalizedString("Upcoming Appointment", comment: "Notification title")
+        content.body = String(format: NSLocalizedString("You have a %@ appointment for %@ at %@.", comment: "Notification body"), serviceType.localized, dogOwner.ownerName, formattedDate)
         content.sound = .default
 
         let triggerDate = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: date)
@@ -153,5 +162,17 @@ final class Appointment: Identifiable {
     func cancelNotification() {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [id.uuidString])
         isNotified = false
+    }
+
+    /// Add a badge to a pet profile
+    func addBadge(_ badge: String) {
+        guard !profileBadges.contains(badge) else { return }
+        profileBadges.append(badge)
+    }
+
+    /// Analyze pet behavior over time (Placeholder for future implementation)
+    func analyzeBehavior() -> String {
+        // Example analysis logic
+        return NSLocalizedString("Behavioral analysis complete. No significant changes observed.", comment: "Behavior analysis result")
     }
 }

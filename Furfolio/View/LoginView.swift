@@ -15,55 +15,69 @@ struct LoginView: View {
     
     var body: some View {
         VStack(spacing: 16) {
-            Text("Welcome to Furfolio")
+            // Title
+            Text(NSLocalizedString("Welcome to Furfolio", comment: "Welcome message on login screen"))
                 .font(.largeTitle)
                 .fontWeight(.bold)
                 .padding(.bottom, 20)
+                .accessibilityAddTraits(.isHeader)
             
-            TextField("Username", text: $username)
+            // Username Input
+            TextField(NSLocalizedString("Username", comment: "Placeholder for username input"), text: $username)
                 .padding()
                 .autocapitalization(.none)
                 .disableAutocorrection(true)
                 .background(Color(UIColor.secondarySystemBackground))
                 .cornerRadius(8)
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
+                .accessibilityLabel(NSLocalizedString("Username", comment: "Accessibility label for username field"))
             
-            SecureField("Password", text: $password)
+            // Password Input
+            SecureField(NSLocalizedString("Password", comment: "Placeholder for password input"), text: $password)
                 .padding()
                 .background(Color(UIColor.secondarySystemBackground))
                 .cornerRadius(8)
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
+                .accessibilityLabel(NSLocalizedString("Password", comment: "Accessibility label for password field"))
             
+            // Login Button
             Button(action: {
                 authenticateUser(username: username, password: password)
             }) {
-                Text("Login")
+                Text(NSLocalizedString("Login", comment: "Button label for logging in"))
                     .font(.headline)
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color.blue)
                     .cornerRadius(8)
+                    .accessibilityLabel(NSLocalizedString("Login Button", comment: "Accessibility label for login button"))
             }
             
+            // Authentication Error Message
             if let error = authenticationError {
                 Text(error)
                     .foregroundColor(.red)
                     .font(.footnote)
                     .padding(.top, 10)
+                    .accessibilityLabel(NSLocalizedString("Error Message", comment: "Accessibility label for error message"))
             }
             
+            // Successful Authentication Message
             if isAuthenticated {
-                Text("Successfully Authenticated!")
+                Text(NSLocalizedString("Successfully Authenticated!", comment: "Message for successful login"))
                     .foregroundColor(.green)
                     .font(.headline)
+                    .accessibilityLabel(NSLocalizedString("Success Message", comment: "Accessibility label for success message"))
             }
         }
         .padding()
+        .accessibilityElement(children: .combine)
     }
     
+    /// Authenticates the user with provided credentials
     func authenticateUser(username: String, password: String) {
-        // Example: Replace with actual secure authentication logic
+        // Example: Replace with actual secure authentication logic (e.g., using a backend service)
         let storedCredentials: [String: String] = [
             "lvconcepcion": "jesus2024" // Replace this with securely stored and hashed credentials
         ]
@@ -73,7 +87,7 @@ struct LoginView: View {
             authenticationError = nil
         } else {
             isAuthenticated = false
-            authenticationError = "Invalid username or password. Please try again."
+            authenticationError = NSLocalizedString("Invalid username or password. Please try again.", comment: "Error message for invalid login credentials")
         }
     }
 }

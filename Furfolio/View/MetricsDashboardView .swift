@@ -18,9 +18,10 @@ struct MetricsDashboardView: View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Metrics Dashboard")
+                    Text(NSLocalizedString("Metrics Dashboard", comment: "Title for the metrics dashboard"))
                         .font(.largeTitle)
                         .bold()
+                        .accessibilityAddTraits(.isHeader)
 
                     // Revenue Trends Chart
                     RevenueChartView(dailyRevenues: filteredRevenues(for: selectedDateRange))
@@ -42,13 +43,12 @@ struct MetricsDashboardView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Dashboard")
+            .navigationTitle(NSLocalizedString("Dashboard", comment: "Navigation title for metrics dashboard"))
         }
     }
 
     // MARK: - Helper Methods
 
-    /// Filters revenue data based on the selected date range
     private func filteredRevenues(for range: DateRange) -> [DailyRevenue] {
         let startDate: Date? = {
             switch range {
@@ -60,19 +60,16 @@ struct MetricsDashboardView: View {
         return dailyRevenues.filter { startDate == nil || $0.date >= startDate! }
     }
 
-    /// Calculates the total revenue for the selected date range
     private func totalRevenue(for range: DateRange) -> Double {
         filteredRevenues(for: range).reduce(0) { $0 + $1.totalAmount }
     }
 
-    /// Gets the list of upcoming appointments within the next 7 days
     private func upcomingAppointments() -> [Appointment] {
         let today = Date()
         let endDate = Calendar.current.date(byAdding: .day, value: 7, to: today) ?? today
         return appointments.filter { $0.date > today && $0.date <= endDate }
     }
 
-    /// Summarizes charges by type and converts keys to `String`
     private func chargesSummary() -> [String: Double] {
         let summary = Charge.totalByType(charges: charges)
         return summary.reduce(into: [String: Double]()) { result, item in
@@ -88,10 +85,10 @@ struct RevenueChartView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text("Revenue Trends")
+            Text(NSLocalizedString("Revenue Trends", comment: "Section title for revenue trends"))
                 .font(.headline)
             if dailyRevenues.isEmpty {
-                Text("No revenue data available.")
+                Text(NSLocalizedString("No revenue data available.", comment: "Message when no revenue data exists"))
                     .foregroundColor(.gray)
             } else {
                 Chart(dailyRevenues) {
@@ -124,9 +121,9 @@ struct TotalRevenueView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text("Total Revenue")
+            Text(NSLocalizedString("Total Revenue", comment: "Section title for total revenue"))
                 .font(.headline)
-            Text("\(revenue, format: .currency(code: "USD"))")
+            Text(revenue.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD")))
                 .font(.title2)
                 .bold()
         }
@@ -143,10 +140,10 @@ struct UpcomingAppointmentsView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text("Upcoming Appointments")
+            Text(NSLocalizedString("Upcoming Appointments", comment: "Section title for upcoming appointments"))
                 .font(.headline)
             if appointments.isEmpty {
-                Text("No upcoming appointments.")
+                Text(NSLocalizedString("No upcoming appointments.", comment: "Message when no upcoming appointments exist"))
                     .foregroundColor(.gray)
             } else {
                 ForEach(appointments) { appointment in
@@ -174,10 +171,10 @@ struct ChargeSummaryView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text("Charge Summary")
+            Text(NSLocalizedString("Charge Summary", comment: "Section title for charge summary"))
                 .font(.headline)
             if charges.isEmpty {
-                Text("No charges recorded.")
+                Text(NSLocalizedString("No charges recorded.", comment: "Message when no charges exist"))
                     .foregroundColor(.gray)
             } else {
                 ForEach(charges.keys.sorted(), id: \.self) { type in
@@ -205,13 +202,13 @@ struct PopularServicesView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text("Popular Services")
+            Text(NSLocalizedString("Popular Services", comment: "Section title for popular services"))
                 .font(.headline)
             let serviceCounts = charges.reduce(into: [String: Int]()) { counts, charge in
                 counts[charge.type.rawValue, default: 0] += 1
             }
             if serviceCounts.isEmpty {
-                Text("No services data available.")
+                Text(NSLocalizedString("No services data available.", comment: "Message when no service data exists"))
                     .foregroundColor(.gray)
             } else {
                 ForEach(serviceCounts.keys.sorted(), id: \.self) { type in
@@ -238,10 +235,10 @@ struct DateRangePicker: View {
     @Binding var selectedDateRange: DateRange
 
     var body: some View {
-        Picker("Date Range", selection: $selectedDateRange) {
-            Text("Last Week").tag(DateRange.lastWeek)
-            Text("Last Month").tag(DateRange.lastMonth)
-            Text("Custom").tag(DateRange.custom)
+        Picker(NSLocalizedString("Date Range", comment: "Picker title for date range selection"), selection: $selectedDateRange) {
+            Text(NSLocalizedString("Last Week", comment: "Last week date range option")).tag(DateRange.lastWeek)
+            Text(NSLocalizedString("Last Month", comment: "Last month date range option")).tag(DateRange.lastMonth)
+            Text(NSLocalizedString("Custom", comment: "Custom date range option")).tag(DateRange.custom)
         }
         .pickerStyle(SegmentedPickerStyle())
         .padding(.top)
