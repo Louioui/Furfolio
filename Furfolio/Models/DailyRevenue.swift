@@ -15,15 +15,39 @@ final class DailyRevenue: Identifiable {
     var totalAmount: Double
 
     // MARK: - Initializer
-    init(date: Date, totalAmount: Double = 0.0) {
+    init(date: Date, totalAmount: Double = 0.0) throws {
+        guard totalAmount >= 0 else {
+            throw RevenueError.negativeAmount
+        }
+        guard date <= Date() else {
+            throw RevenueError.futureDate
+        }
         self.id = UUID()
         self.date = date
-        self.totalAmount = max(0, totalAmount) // Ensure no negative revenue
+        self.totalAmount = totalAmount
+
+        // Schedule the daily reset
+        scheduleDailyReset()
+    }
+
+    // MARK: - Error Handling
+    enum RevenueError: Error {
+        case negativeAmount
+        case futureDate
+
+        var localizedDescription: String {
+            switch self {
+            case .negativeAmount:
+                return NSLocalizedString("Total amount cannot be negative.", comment: "Revenue Error: Negative Amount")
+            case .futureDate:
+                return NSLocalizedString("Date cannot be in the future.", comment: "Revenue Error: Future Date")
+            }
+        }
     }
 
     // MARK: - Computed Properties
 
-    /// Format the total revenue as currency
+    /// Formats the total amount as a localized currency string.
     var formattedTotal: String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
@@ -31,17 +55,17 @@ final class DailyRevenue: Identifiable {
         return formatter.string(from: NSNumber(value: totalAmount)) ?? "$\(totalAmount)"
     }
 
-    /// Format the revenue date for display
+    /// Formats the date as a localized string.
     var formattedDate: String {
         date.formatted(.dateTime.month().day().year())
     }
 
-    /// Determines if the record is for today
+    /// Checks if the revenue is for today's date.
     var isToday: Bool {
         Calendar.current.isDateInToday(date)
     }
 
-    /// Determines if the record is for the current month
+    /// Checks if the revenue is for the current month.
     var isCurrentMonth: Bool {
         let calendar = Calendar.current
         return calendar.component(.month, from: date) == calendar.component(.month, from: Date()) &&
@@ -50,17 +74,33 @@ final class DailyRevenue: Identifiable {
 
     // MARK: - Methods
 
-    /// Add revenue to the total amount
+    /// Adds revenue to the total amount, ensuring the amount is non-negative.
     func addRevenue(amount: Double) {
         totalAmount += max(0, amount)
     }
 
-    /// Reset the revenue total
+    /// Resets the total revenue to 0.0 at the end of the day.
     func resetRevenue() {
         totalAmount = 0.0
     }
 
-    /// Calculate weekly revenue (last 7 days from the current date)
+    /// Schedules a reset at midnight for the next day.
+    func scheduleDailyReset() {
+        let calendar = Calendar.current
+        let now = Date()
+        let nextMidnight = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: now))!
+
+        Timer.scheduledTimer(withTimeInterval: nextMidnight.timeIntervalSince(now), repeats: false) { _ in
+            self.resetRevenueTask()
+        }
+    }
+
+    /// Timer task to reset the revenue.
+    private func resetRevenueTask() {
+        resetRevenue()
+    }
+
+    /// Calculates the total revenue for the past 7 days, including today.
     func calculateWeeklyRevenue(from revenues: [DailyRevenue]) -> Double {
         let calendar = Calendar.current
         let startDate = calendar.date(byAdding: .day, value: -6, to: date) ?? date
@@ -68,7 +108,7 @@ final class DailyRevenue: Identifiable {
         return DailyRevenue.totalRevenue(for: range, revenues: revenues)
     }
 
-    /// Calculate monthly revenue (all days in the current month)
+    /// Calculates the total revenue for the current month.
     func calculateMonthlyRevenue(from revenues: [DailyRevenue]) -> Double {
         let calendar = Calendar.current
         guard let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: date)),
@@ -79,7 +119,7 @@ final class DailyRevenue: Identifiable {
         return DailyRevenue.totalRevenue(for: range, revenues: revenues)
     }
 
-    /// Calculate revenue for a specific date
+    /// Calculates the revenue for a specific date.
     func calculateRevenue(for specificDate: Date, from revenues: [DailyRevenue]) -> Double {
         let calendar = Calendar.current
         return revenues.filter { calendar.isDate($0.date, inSameDayAs: specificDate) }
@@ -88,12 +128,12 @@ final class DailyRevenue: Identifiable {
 
     // MARK: - Static Methods
 
-    /// Calculate total revenue for a date range
+    /// Calculates the total revenue for a specific date range.
     static func totalRevenue(for range: ClosedRange<Date>, revenues: [DailyRevenue]) -> Double {
         revenues.filter { range.contains($0.date) }.reduce(0) { $0 + $1.totalAmount }
     }
 
-    /// Calculate average daily revenue for a date range
+    /// Calculates the average daily revenue for a specific date range.
     static func averageDailyRevenue(for range: ClosedRange<Date>, revenues: [DailyRevenue]) -> Double {
         let filteredRevenues = revenues.filter { range.contains($0.date) }
         let totalDays = Double(Calendar.current.dateComponents([.day], from: range.lowerBound, to: range.upperBound).day ?? 0) + 1
@@ -101,12 +141,12 @@ final class DailyRevenue: Identifiable {
         return totalDays > 0 ? totalRevenue / totalDays : 0
     }
 
-    /// Get the revenue record for today
+    /// Returns the revenue for today's date, if available.
     static func revenueForToday(from revenues: [DailyRevenue]) -> DailyRevenue? {
         revenues.first { Calendar.current.isDateInToday($0.date) }
     }
 
-    /// Get total revenue grouped by week
+    /// Summarizes the total weekly revenue grouped by week.
     static func weeklyRevenueSummary(from revenues: [DailyRevenue]) -> [(week: String, total: Double)] {
         let calendar = Calendar.current
         let grouped = Dictionary(grouping: revenues) { revenue in

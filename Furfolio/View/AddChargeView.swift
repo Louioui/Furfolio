@@ -32,7 +32,7 @@ struct AddChargeView: View {
                     .pickerStyle(MenuPickerStyle())
 
                     // Charge Amount Input
-                    TextField(NSLocalizedString("Amount Charged", comment: "Text field label for charge amount"), value: $chargeAmount, format: .currency(code: Locale.current.currencyCode ?? "USD"))
+                    TextField(NSLocalizedString("Amount Charged", comment: "Text field label for charge amount"), value: $chargeAmount, format: .currency(code: Locale.current.currency?.identifier ?? "USD"))
                         .keyboardType(.decimalPad)
                         .onChange(of: chargeAmount) { newValue in
                             if let newValue {

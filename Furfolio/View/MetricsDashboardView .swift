@@ -29,6 +29,9 @@ struct MetricsDashboardView: View {
                     // Total Revenue Summary
                     TotalRevenueView(revenue: totalRevenue(for: selectedDateRange))
 
+                    // Revenue by Quarters
+                    QuarterRevenueView(dailyRevenues: dailyRevenues)
+
                     // Upcoming Appointments
                     UpcomingAppointmentsView(appointments: upcomingAppointments())
 
@@ -61,7 +64,21 @@ struct MetricsDashboardView: View {
     }
 
     private func totalRevenue(for range: DateRange) -> Double {
-        filteredRevenues(for: range).reduce(0) { $0 + $1.totalAmount }
+        charges.filter { charge in
+            let calendar = Calendar.current
+            guard let startDate: Date = {
+                switch range {
+                case .lastWeek:
+                    return calendar.date(byAdding: .day, value: -7, to: Date())
+                case .lastMonth:
+                    return calendar.date(byAdding: .month, value: -1, to: Date())
+                case .custom:
+                    return nil
+                }
+            }() else { return true }
+            return charge.date >= startDate
+        }
+        .reduce(0) { $0 + $1.amount }
     }
 
     private func upcomingAppointments() -> [Appointment] {
@@ -129,6 +146,39 @@ struct TotalRevenueView: View {
         }
         .padding()
         .background(Color.yellow.opacity(0.1))
+        .cornerRadius(8)
+    }
+}
+
+// MARK: - Quarter Revenue View
+
+struct QuarterRevenueView: View {
+    let dailyRevenues: [DailyRevenue]
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            Text(NSLocalizedString("Quarterly Revenue", comment: "Section title for quarterly revenue"))
+                .font(.headline)
+            let calendar = Calendar.current
+            let groupedByQuarter = Dictionary(grouping: dailyRevenues) { revenue in
+                let month = calendar.component(.month, from: revenue.date)
+                return (month - 1) / 3 + 1 // Calculate the quarter
+            }
+
+            ForEach(groupedByQuarter.keys.sorted(), id: \.self) { quarter in
+                let totalRevenue = groupedByQuarter[quarter]?.reduce(0) { $0 + $1.totalAmount } ?? 0
+                HStack {
+                    Text("Q\(quarter)")
+                        .font(.subheadline)
+                    Spacer()
+                    Text(totalRevenue.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD")))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .padding()
+        .background(Color.teal.opacity(0.1))
         .cornerRadius(8)
     }
 }

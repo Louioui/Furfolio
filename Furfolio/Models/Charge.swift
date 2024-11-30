@@ -18,18 +18,21 @@ final class Charge: Identifiable {
     var notes: String?
     var petBadges: [String] // Track badges associated with this charge (e.g., behavior notes)
 
-    // Enum to define service types with localization support
+    // MARK: - Enum for Service Types
+
     enum ServiceType: String, Codable, CaseIterable {
         case basic = "Basic Package"
         case full = "Full Package"
         case custom = "Custom Package"
 
+        /// Localized service type description
         var localized: String {
             NSLocalizedString(self.rawValue, comment: "Localized description of \(self.rawValue)")
         }
     }
 
     // MARK: - Initializer
+
     init(date: Date, type: ServiceType, amount: Double, dogOwner: DogOwner, notes: String? = nil, petBadges: [String] = []) {
         self.id = UUID()
         self.date = date
@@ -87,7 +90,7 @@ final class Charge: Identifiable {
         petBadges.append(badge)
     }
 
-    /// Analyze pet behavior based on charge notes (placeholder logic)
+    /// Analyze pet behavior based on charge notes
     func analyzeBehavior() -> String {
         if let notes = notes, notes.lowercased().contains("anxious") {
             return NSLocalizedString("Behavioral analysis: Pet is anxious during appointments.", comment: "Behavioral analysis result")
@@ -108,10 +111,9 @@ final class Charge: Identifiable {
 
     /// Calculate the total revenue for a given month and year
     static func totalRevenue(forMonth month: Int, year: Int, charges: [Charge]) -> Double {
-        let total = charges.filter { $0.isInMonth(month, year: year) }.reduce(0) { $0 + $1.amount }
-        // Log or display this in a user-facing component
-        print(NSLocalizedString("Total revenue for \(month)/\(year): \(total)", comment: "Total revenue log message"))
-        return total
+        charges
+            .filter { $0.isInMonth(month, year: year) }
+            .reduce(0) { $0 + $1.amount }
     }
 
     /// Filter charges based on a specific dog owner
@@ -131,5 +133,15 @@ final class Charge: Identifiable {
             categorized[charge.type, default: []].append(charge)
         }
         return categorized
+    }
+
+    /// Get charges within a specific date range
+    static func chargesInDateRange(_ range: ClosedRange<Date>, from charges: [Charge]) -> [Charge] {
+        charges.filter { range.contains($0.date) }
+    }
+
+    /// Calculate the total revenue for a specific date range
+    static func totalRevenue(for range: ClosedRange<Date>, from charges: [Charge]) -> Double {
+        chargesInDateRange(range, from: charges).reduce(0) { $0 + $1.amount }
     }
 }

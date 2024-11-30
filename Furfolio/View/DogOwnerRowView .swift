@@ -69,21 +69,8 @@ struct DogOwnerRowView: View {
                     .foregroundColor(.blue)
                     .accessibilityLabel(NSLocalizedString("Upcoming appointments", comment: "Accessibility label for upcoming appointments tag"))
             }
-
-            // Total Charges
-            if dogOwner.totalCharges > 0 {
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text(dogOwner.totalCharges.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD")))
-                        .font(.caption)
-                        .foregroundColor(.green)
-                        .accessibilityLabel(String(format: NSLocalizedString("Total charges: %@", comment: "Accessibility label for total charges"), dogOwner.totalCharges.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD"))))
-                }
-                .padding(.leading, 8)
-            }
+            
         }
-        .padding(.vertical, 8)
-        .contentShape(Rectangle()) // Ensure tap area includes entire row
-        .accessibilityElement(children: .combine)
-        .accessibilityHint(String(format: NSLocalizedString("Tap to view details about %@ and their dog.", comment: "Accessibility hint for dog owner row"), dogOwner.ownerName))
+        
     }
 }

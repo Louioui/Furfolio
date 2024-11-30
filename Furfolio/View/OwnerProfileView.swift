@@ -68,16 +68,16 @@ struct OwnerProfileView: View {
     @ViewBuilder
     private func ownerInfoSection() -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(dogOwner.ownerName ?? "Unknown Owner")
+            Text(dogOwner.ownerName)
                 .font(.title)
                 .bold()
-            if !(dogOwner.contactInfo ?? "").isEmpty {
-                Text(String(format: NSLocalizedString("Contact: %@", comment: "Contact information label"), dogOwner.contactInfo ?? ""))
+            if !(dogOwner.contactInfo).isEmpty {
+                Text(String(format: NSLocalizedString("Contact: %@", comment: "Contact information label"), dogOwner.contactInfo))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
-            if !(dogOwner.address ?? "").isEmpty {
-                Text(String(format: NSLocalizedString("Address: %@", comment: "Address information label"), dogOwner.address ?? ""))
+            if !(dogOwner.address).isEmpty {
+                Text(String(format: NSLocalizedString("Address: %@", comment: "Address information label"), dogOwner.address))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -93,10 +93,10 @@ struct OwnerProfileView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(NSLocalizedString("Dog Info", comment: "Header for Dog Info section"))
                 .font(.headline)
-            Text(String(format: NSLocalizedString("Name: %@", comment: "Dog name label"), dogOwner.dogName ?? "Unknown Dog"))
-            Text(String(format: NSLocalizedString("Breed: %@", comment: "Dog breed label"), dogOwner.breed ?? "Unknown Breed"))
-            if !(dogOwner.notes ?? "").isEmpty {
-                Text(String(format: NSLocalizedString("Notes: %@", comment: "Dog notes label"), dogOwner.notes ?? ""))
+            Text(String(format: NSLocalizedString("Name: %@", comment: "Dog name label"), dogOwner.dogName))
+            Text(String(format: NSLocalizedString("Breed: %@", comment: "Dog breed label"), dogOwner.breed))
+            if !(dogOwner.notes).isEmpty {
+                Text(String(format: NSLocalizedString("Notes: %@", comment: "Dog notes label"), dogOwner.notes))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
