@@ -82,6 +82,7 @@ struct LoginView: View {
             "lvconcepcion": "jesus2024" // Replace this with securely stored and hashed credentials
         ]
         
+        // Check if username exists in the dictionary and the password matches
         if let storedPassword = storedCredentials[username], storedPassword == password {
             isAuthenticated = true
             authenticationError = nil

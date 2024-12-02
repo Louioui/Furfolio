@@ -27,14 +27,10 @@ struct OwnerProfileView: View {
                     dogInfoSection()
 
                     // Appointment History Section
-                    if showAppointments {
-                        appointmentHistorySection()
-                    }
+                    appointmentHistorySection()
 
                     // Charge History Section
-                    if showCharges {
-                        chargeHistorySection()
-                    }
+                    chargeHistorySection()
                 }
                 .padding()
             }
@@ -71,16 +67,8 @@ struct OwnerProfileView: View {
             Text(dogOwner.ownerName)
                 .font(.title)
                 .bold()
-            if !(dogOwner.contactInfo).isEmpty {
-                Text(String(format: NSLocalizedString("Contact: %@", comment: "Contact information label"), dogOwner.contactInfo))
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-            if !(dogOwner.address).isEmpty {
-                Text(String(format: NSLocalizedString("Address: %@", comment: "Address information label"), dogOwner.address))
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
+            contactInfoText
+            addressText
         }
         .padding()
         .background(Color.gray.opacity(0.1))
@@ -95,24 +83,14 @@ struct OwnerProfileView: View {
                 .font(.headline)
             Text(String(format: NSLocalizedString("Name: %@", comment: "Dog name label"), dogOwner.dogName))
             Text(String(format: NSLocalizedString("Breed: %@", comment: "Dog breed label"), dogOwner.breed))
-            if !(dogOwner.notes).isEmpty {
+            
+            // Check if Notes exist and display
+            if !dogOwner.notes.isEmpty {
                 Text(String(format: NSLocalizedString("Notes: %@", comment: "Dog notes label"), dogOwner.notes))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
-            if let imageData = dogOwner.dogImage, let uiImage = UIImage(data: imageData) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 150)
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(Color.gray, lineWidth: 1))
-                    .padding(.top)
-            } else {
-                Text(NSLocalizedString("No image available", comment: "Message for missing dog image"))
-                    .font(.caption)
-                    .foregroundColor(.gray)
-            }
+            dogImageView
         }
         .padding()
         .background(Color.blue.opacity(0.1))
@@ -132,32 +110,9 @@ struct OwnerProfileView: View {
                         .font(.caption)
                         .foregroundColor(.blue)
                 }
-                Button(action: { showAddAppointment = true }) {
-                    Image(systemName: "calendar.badge.plus")
-                        .font(.headline)
-                }
-                .foregroundColor(.blue)
+                addAppointmentButton
             }
-            if dogOwner.appointments.isEmpty {
-                Text(NSLocalizedString("No appointments available.", comment: "Message for no appointments"))
-                    .foregroundColor(.gray)
-                    .italic()
-            } else {
-                ForEach(dogOwner.appointments.sorted(by: { $0.date > $1.date })) { appointment in
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(String(format: NSLocalizedString("Date: %@", comment: "Appointment date label"), appointment.date.formatted(.dateTime.month().day().year())))
-                        Text(String(format: NSLocalizedString("Service: %@", comment: "Service type label"), appointment.serviceType.rawValue))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        if let notes = appointment.notes, !(notes).isEmpty {
-                            Text(String(format: NSLocalizedString("Notes: %@", comment: "Appointment notes label"), notes))
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .padding(.vertical, 4)
-                }
-            }
+            appointmentList
         }
         .padding()
         .background(Color.orange.opacity(0.1))
@@ -177,12 +132,97 @@ struct OwnerProfileView: View {
                         .font(.caption)
                         .foregroundColor(.blue)
                 }
-                Button(action: { showAddCharge = true }) {
-                    Image(systemName: "plus.circle")
-                        .font(.headline)
-                }
-                .foregroundColor(.blue)
+                addChargeButton
             }
+            chargeList
+        }
+        .padding()
+        .background(Color.pink.opacity(0.1))
+        .cornerRadius(10)
+    }
+
+    // MARK: - Helper Views
+    private var contactInfoText: some View {
+        Group {
+            if !dogOwner.contactInfo.isEmpty {
+                Text(String(format: NSLocalizedString("Contact: %@", comment: "Contact information label"), dogOwner.contactInfo))
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+
+    private var addressText: some View {
+        Group {
+            if !dogOwner.address.isEmpty {
+                Text(String(format: NSLocalizedString("Address: %@", comment: "Address information label"), dogOwner.address))
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+
+    private var dogImageView: some View {
+        Group {
+            if let imageData = dogOwner.dogImage, let uiImage = UIImage(data: imageData) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 150)
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(Color.gray, lineWidth: 1))
+                    .padding(.top)
+            } else {
+                Text(NSLocalizedString("No image available", comment: "Message for missing dog image"))
+                    .font(.caption)
+                    .foregroundColor(.gray)
+            }
+        }
+    }
+
+    private var addAppointmentButton: some View {
+        Button(action: { showAddAppointment = true }) {
+            Image(systemName: "calendar.badge.plus")
+                .font(.headline)
+        }
+        .foregroundColor(.blue)
+    }
+
+    private var addChargeButton: some View {
+        Button(action: { showAddCharge = true }) {
+            Image(systemName: "plus.circle")
+                .font(.headline)
+        }
+        .foregroundColor(.blue)
+    }
+
+    private var appointmentList: some View {
+        Group {
+            if dogOwner.appointments.isEmpty {
+                Text(NSLocalizedString("No appointments available.", comment: "Message for no appointments"))
+                    .foregroundColor(.gray)
+                    .italic()
+            } else {
+                ForEach(dogOwner.appointments.sorted(by: { $0.date > $1.date })) { appointment in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(String(format: NSLocalizedString("Date: %@", comment: "Appointment date label"), appointment.date.formatted(.dateTime.month().day().year())))
+                        Text(String(format: NSLocalizedString("Service: %@", comment: "Service type label"), appointment.serviceType.rawValue))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        if let notes = appointment.notes, !notes.isEmpty {
+                            Text(String(format: NSLocalizedString("Notes: %@", comment: "Appointment notes label"), notes))
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+        }
+    }
+
+    private var chargeList: some View {
+        Group {
             if dogOwner.charges.isEmpty {
                 Text(NSLocalizedString("No charges recorded.", comment: "Message for no charges"))
                     .foregroundColor(.gray)
@@ -195,7 +235,7 @@ struct OwnerProfileView: View {
                             Text(String(format: NSLocalizedString("Type: %@", comment: "Charge type label"), charge.type.rawValue))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
-                            if let notes = charge.notes, !(notes).isEmpty {
+                            if let notes = charge.notes, !notes.isEmpty {
                                 Text(String(format: NSLocalizedString("Notes: %@", comment: "Charge notes label"), notes))
                                     .font(.caption2)
                                     .foregroundColor(.secondary)
@@ -210,8 +250,5 @@ struct OwnerProfileView: View {
                 }
             }
         }
-        .padding()
-        .background(Color.pink.opacity(0.1))
-        .cornerRadius(10)
     }
 }

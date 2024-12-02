@@ -23,58 +23,20 @@ struct AddAppointmentView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text(NSLocalizedString("Appointment Details", comment: "Section header for appointment details"))) {
-                    DatePicker(NSLocalizedString("Appointment Date", comment: "Picker for appointment date"), selection: $appointmentDate, displayedComponents: [.date, .hourAndMinute])
-                        .onChange(of: appointmentDate) { _ in
-                            conflictWarning = nil
-                        }
-
-                    Picker(NSLocalizedString("Service Type", comment: "Picker for selecting service type"), selection: $serviceType) {
-                        ForEach(Appointment.ServiceType.allCases, id: \.self) { type in
-                            Text(type.localized)
-                        }
-                    }
-                    .pickerStyle(MenuPickerStyle())
-
-                    TextField(NSLocalizedString("Notes (Optional)", comment: "Placeholder for appointment notes"), text: $appointmentNotes)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .autocapitalization(.sentences)
-
-                    Toggle(NSLocalizedString("Enable Reminder", comment: "Toggle for enabling reminders"), isOn: $enableReminder)
-                        .onChange(of: enableReminder) { isOn in
-                            if isOn {
-                                requestNotificationPermission()
-                            }
-                        }
-                }
+                appointmentDetailsSection()
 
                 if let conflictWarning = conflictWarning {
-                    Section {
-                        Text(conflictWarning)
-                            .foregroundColor(.red)
-                            .italic()
-                    }
+                    conflictWarningSection(conflictWarning)
                 }
             }
             .navigationTitle(NSLocalizedString("Add Appointment", comment: "Navigation title for Add Appointment view"))
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(NSLocalizedString("Cancel", comment: "Cancel button")) {
-                        dismiss()
-                    }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(NSLocalizedString("Save", comment: "Save button")) {
-                        if validateAppointment() {
-                            isSaving = true
-                            saveAppointment()
-                            dismiss()
-                        }
-                    }
-                    .disabled(!validateFields() || isSaving)
-                }
+                toolbarContent()
             }
-            .alert(NSLocalizedString("Conflict Detected", comment: "Alert title for conflict detection"), isPresented: .constant(conflictWarning != nil)) {
+            .alert(
+                NSLocalizedString("Conflict Detected", comment: "Alert title for conflict detection"),
+                isPresented: .constant(conflictWarning != nil)
+            ) {
                 Button(NSLocalizedString("OK", comment: "Alert confirmation button"), role: .cancel) {}
             } message: {
                 Text(conflictWarning ?? "")
@@ -82,33 +44,93 @@ struct AddAppointmentView: View {
         }
     }
 
-    // MARK: - Validation Methods
+    // MARK: - Sections
 
-    /// Validates the appointment and checks for conflicts
-    private func validateAppointment() -> Bool {
-        guard validateFields() else { return false }
-        if !checkConflicts() {
-            conflictWarning = NSLocalizedString("This appointment conflicts with another!", comment: "Conflict warning message")
-            return false
+    @ViewBuilder
+    private func appointmentDetailsSection() -> some View {
+        Section(header: Text(NSLocalizedString("Appointment Details", comment: "Section header for appointment details"))) {
+            DatePicker(
+                NSLocalizedString("Appointment Date", comment: "Picker for appointment date"),
+                selection: $appointmentDate,
+                displayedComponents: [.date, .hourAndMinute]
+            )
+            .onChange(of: appointmentDate) { _ in conflictWarning = nil }
+
+            Picker(
+                NSLocalizedString("Service Type", comment: "Picker for selecting service type"),
+                selection: $serviceType
+            ) {
+                ForEach(Appointment.ServiceType.allCases, id: \.self) { type in
+                    Text(type.localized)
+                }
+            }
+            .pickerStyle(MenuPickerStyle())
+
+            TextField(
+                NSLocalizedString("Notes (Optional)", comment: "Placeholder for appointment notes"),
+                text: $appointmentNotes
+            )
+            .textFieldStyle(RoundedBorderTextFieldStyle())
+            .autocapitalization(.sentences)
+
+            Toggle(
+                NSLocalizedString("Enable Reminder", comment: "Toggle for enabling reminders"),
+                isOn: $enableReminder
+            )
+            .onChange(of: enableReminder) { isOn in
+                if isOn {
+                    requestNotificationPermission()
+                }
+            }
         }
-        return true
     }
 
-    /// Ensures required fields are filled
-    private func validateFields() -> Bool {
-        appointmentDate > Date()
+    @ViewBuilder
+    private func conflictWarningSection(_ conflictWarning: String) -> some View {
+        Section {
+            Text(conflictWarning)
+                .foregroundColor(.red)
+                .italic()
+        }
     }
 
-    /// Checks for conflicting appointments
-    private func checkConflicts() -> Bool {
-        !dogOwner.appointments.contains { abs($0.date.timeIntervalSince(appointmentDate)) < 3600 }
+    // MARK: - Toolbar
+
+    @ToolbarContentBuilder
+    private func toolbarContent() -> some ToolbarContent {
+        ToolbarItem(placement: .navigationBarLeading) {
+            Button(NSLocalizedString("Cancel", comment: "Cancel button")) {
+                dismiss()
+            }
+        }
+
+        ToolbarItem(placement: .navigationBarTrailing) {
+            Button(NSLocalizedString("Save", comment: "Save button")) {
+                handleSave()
+            }
+            .disabled(!validateFields() || isSaving)
+        }
     }
 
-    // MARK: - Save Method
+    // MARK: - Save Handling
+
+    private func handleSave() {
+        if validateAppointment() {
+            isSaving = true
+            saveAppointment()
+            dismiss()
+        }
+    }
 
     /// Saves the appointment to the model context
     private func saveAppointment() {
-        let newAppointment = Appointment(date: appointmentDate, dogOwner: dogOwner, serviceType: serviceType, notes: appointmentNotes)
+        let newAppointment = Appointment(
+            date: appointmentDate,
+            dogOwner: dogOwner,
+            serviceType: serviceType,
+            notes: appointmentNotes
+        )
+
         withAnimation {
             modelContext.insert(newAppointment)
             dogOwner.appointments.append(newAppointment)
@@ -119,19 +141,63 @@ struct AddAppointmentView: View {
         }
     }
 
-    // MARK: - Reminder Methods
+    // MARK: - Validation
+
+    /// Validates the appointment and checks for conflicts
+    private func validateAppointment() -> Bool {
+        guard validateFields() else { return false }
+
+        if !checkConflicts() {
+            conflictWarning = NSLocalizedString(
+                "This appointment conflicts with another!",
+                comment: "Conflict warning message"
+            )
+            return false
+        }
+
+        return true
+    }
+
+    /// Ensures required fields are filled
+    private func validateFields() -> Bool {
+        appointmentDate > Date()
+    }
+
+    /// Checks for conflicting appointments
+    private func checkConflicts() -> Bool {
+        !dogOwner.appointments.contains {
+            abs($0.date.timeIntervalSince(appointmentDate)) < 3600
+        }
+    }
+
+    // MARK: - Reminder Management
 
     /// Schedules a reminder notification for the appointment
     private func scheduleReminder(for appointment: Appointment) {
         let content = UNMutableNotificationContent()
         content.title = NSLocalizedString("Upcoming Appointment", comment: "Reminder title")
-        content.body = String(format: NSLocalizedString("Appointment with %@ on %@", comment: "Reminder body"), dogOwner.ownerName, appointment.formattedDate)
+        content.body = String(
+            format: NSLocalizedString("Appointment with %@ on %@", comment: "Reminder body"),
+            dogOwner.ownerName,
+            appointment.formattedDate
+        )
         content.sound = .default
 
-        let triggerDate = Calendar.current.date(byAdding: .minute, value: -30, to: appointment.date) ?? appointment.date
-        let trigger = UNCalendarNotificationTrigger(dateMatching: Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: triggerDate), repeats: false)
+        guard let triggerDate = Calendar.current.date(byAdding: .minute, value: -30, to: appointment.date) else { return }
 
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+        let trigger = UNCalendarNotificationTrigger(
+            dateMatching: Calendar.current.dateComponents(
+                [.year, .month, .day, .hour, .minute],
+                from: triggerDate
+            ),
+            repeats: false
+        )
+
+        let request = UNNotificationRequest(
+            identifier: UUID().uuidString,
+            content: content,
+            trigger: trigger
+        )
 
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
@@ -146,6 +212,7 @@ struct AddAppointmentView: View {
             if let error = error {
                 print("Notification permission error: \(error.localizedDescription)")
             }
+
             if !granted {
                 enableReminder = false
                 print("User denied notification permissions.")

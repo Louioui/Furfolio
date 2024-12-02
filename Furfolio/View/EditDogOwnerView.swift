@@ -41,149 +41,155 @@ struct EditDogOwnerView: View {
     var body: some View {
         NavigationView {
             Form {
-                // Owner Information Section
-                Section(header: Text(NSLocalizedString("Owner Information", comment: "Header for owner information section"))) {
-                    TextField(NSLocalizedString("Owner Name", comment: "Placeholder for owner name"), text: $ownerName)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .autocapitalization(.words)
-
-                    TextField(NSLocalizedString("Contact Info (Optional)", comment: "Placeholder for contact information"), text: $contactInfo)
-                        .keyboardType(.phonePad)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-
-                    TextField(NSLocalizedString("Address (Optional)", comment: "Placeholder for address"), text: $address)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .autocapitalization(.words)
-                }
-
-                // Dog Information Section
-                Section(header: Text(NSLocalizedString("Dog Information", comment: "Header for dog information section"))) {
-                    TextField(NSLocalizedString("Dog Name", comment: "Placeholder for dog name"), text: $dogName)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .autocapitalization(.words)
-
-                    TextField(NSLocalizedString("Breed", comment: "Placeholder for breed"), text: $breed)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .autocapitalization(.words)
-
-                    VStack(alignment: .leading) {
-                        TextField(NSLocalizedString("Notes (Optional)", comment: "Placeholder for notes"), text: $notes)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .autocapitalization(.sentences)
-                            .onChange(of: notes) { _ in
-                                limitNotesLength()
-                            }
-                        if notes.count > 250 {
-                            Text(NSLocalizedString("Notes must be 250 characters or less.", comment: "Warning for note length"))
-                                .font(.caption)
-                                .foregroundColor(.red)
-                        }
-                    }
-                }
-
-                // Dog Image Section
-                Section(header: Text(NSLocalizedString("Dog Image", comment: "Header for dog image section"))) {
-                    PhotosPicker(
-                        selection: $selectedImage,
-                        matching: .images,
-                        photoLibrary: .shared()
-                    ) {
-                        HStack {
-                            if let selectedImageData, let uiImage = UIImage(data: selectedImageData) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 100, height: 100)
-                                    .clipShape(Circle())
-                                    .overlay(Circle().stroke(Color.gray, lineWidth: 1))
-                                    .accessibilityLabel(NSLocalizedString("Selected dog image", comment: "Accessibility label for selected dog image"))
-                            } else {
-                                Image(systemName: "photo.circle.fill")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 100, height: 100)
-                                    .foregroundColor(.gray)
-                                    .accessibilityLabel(NSLocalizedString("Default dog image", comment: "Accessibility label for default dog image"))
-                            }
-                            Spacer()
-                            Text(NSLocalizedString("Select an Image", comment: "Button label for selecting an image"))
-                        }
-                    }
-                    .onChange(of: selectedImage) { newValue in
-                        if let newValue {
-                            Task {
-                                if let data = try? await newValue.loadTransferable(type: Data.self) {
-                                    if isValidImage(data: data) {
-                                        selectedImageData = data
-                                    } else {
-                                        showImageError = true
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    .alert(NSLocalizedString("Invalid Image", comment: "Alert title for invalid image"), isPresented: $showImageError) {
-                        Button(NSLocalizedString("OK", comment: "Button label for alert confirmation"), role: .cancel) {}
-                    } message: {
-                        Text(NSLocalizedString("Please select an image under 5MB with appropriate dimensions.", comment: "Message for invalid image dimensions or size"))
-                    }
-                }
+                ownerInformationSection()
+                dogInformationSection()
+                dogImageSection()
             }
-            .navigationTitle(NSLocalizedString("Edit Dog Owner", comment: "Navigation title for edit dog owner view"))
+            .navigationTitle("Edit Dog Owner")
             .toolbar {
-                // Cancel Button
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(NSLocalizedString("Cancel", comment: "Button label for cancel")) {
+                    Button("Cancel") {
                         dismiss()
                     }
                 }
-
-                // Save Button
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(NSLocalizedString("Save", comment: "Button label for save")) {
-                        if validateFields() {
-                            isSaving = true
-                            let updatedOwner = DogOwner(
-                                ownerName: ownerName,
-                                dogName: dogName,
-                                breed: breed,
-                                contactInfo: contactInfo,
-                                address: address,
-                                dogImage: selectedImageData,
-                                notes: notes
-                            )
-                            onSave(updatedOwner)
-                            dismiss()
-                        } else {
-                            showValidationError = true
-                        }
+                    Button("Save") {
+                        handleSave()
                     }
                     .disabled(isSaving || !validateFields())
                 }
             }
-            .alert(NSLocalizedString("Missing Required Fields", comment: "Alert title for missing required fields"), isPresented: $showValidationError) {
-                Button(NSLocalizedString("OK", comment: "Button label for alert confirmation"), role: .cancel) {}
+            .alert("Missing Required Fields", isPresented: $showValidationError) {
+                Button("OK", role: .cancel) {}
             } message: {
-                Text(NSLocalizedString("Please fill out the required fields: Owner Name, Dog Name, and Breed.", comment: "Message for missing required fields"))
+                Text("Please fill out the required fields: Owner Name, Dog Name, and Breed.")
+            }
+            .alert("Invalid Image", isPresented: $showImageError) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Please select an image under 5MB with appropriate dimensions.")
             }
         }
     }
 
-    // MARK: - Validation Methods
+    // MARK: - Form Sections
 
-    /// Ensures required fields are filled
+    private func ownerInformationSection() -> some View {
+        Section(header: Text("Owner Information")) {
+            customTextField(placeholder: "Owner Name", text: $ownerName)
+            customTextField(placeholder: "Contact Info (Optional)", text: $contactInfo, keyboardType: .phonePad)
+            customTextField(placeholder: "Address (Optional)", text: $address)
+        }
+    }
+
+    private func dogInformationSection() -> some View {
+        Section(header: Text("Dog Information")) {
+            customTextField(placeholder: "Dog Name", text: $dogName)
+            customTextField(placeholder: "Breed", text: $breed)
+            notesField()
+        }
+    }
+
+    private func dogImageSection() -> some View {
+        Section(header: Text("Dog Image")) {
+            PhotosPicker(
+                selection: $selectedImage,
+                matching: .images,
+                photoLibrary: .shared()
+            ) {
+                HStack {
+                    if let selectedImageData, let uiImage = UIImage(data: selectedImageData) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 100, height: 100)
+                            .clipShape(Circle())
+                            .overlay(Circle().stroke(Color.gray, lineWidth: 1))
+                            .accessibilityLabel("Selected dog image")
+                    } else {
+                        Image(systemName: "photo.circle.fill")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 100, height: 100)
+                            .foregroundColor(.gray)
+                            .accessibilityLabel("Placeholder dog image")
+                    }
+                    Spacer()
+                    Text("Select an Image")
+                }
+            }
+            .onChange(of: selectedImage) { newValue in handleImageSelection(newValue) }
+        }
+    }
+
+    private func notesField() -> some View {
+        VStack(alignment: .leading) {
+            customTextField(placeholder: "Notes (Optional)", text: $notes)
+                .onChange(of: notes) { _ in limitNotesLength() }
+            
+            if notes.count > 250 {
+                Text("Notes must be 250 characters or less.")
+                    .font(.caption)
+                    .foregroundColor(.red)
+            }
+        }
+    }
+
+    private func customTextField(placeholder: String, text: Binding<String>, keyboardType: UIKeyboardType = .default) -> some View {
+        TextField(placeholder, text: text)
+            .textFieldStyle(RoundedBorderTextFieldStyle())
+            .keyboardType(keyboardType)
+            .autocapitalization(.words)
+    }
+
+    // MARK: - Save Handling
+
+    private func handleSave() {
+        if validateFields() {
+            isSaving = true
+            updateDogOwner()
+            dismiss()
+        } else {
+            showValidationError = true
+        }
+    }
+
+    /// Updates the `DogOwner` object and calls the `onSave` closure
+    private func updateDogOwner() {
+        dogOwner.ownerName = ownerName
+        dogOwner.dogName = dogName
+        dogOwner.breed = breed
+        dogOwner.contactInfo = contactInfo
+        dogOwner.address = address
+        dogOwner.notes = notes
+        dogOwner.dogImage = selectedImageData
+        onSave(dogOwner)
+    }
+
+    // MARK: - Helper Methods
+
+    private func handleImageSelection(_ newValue: PhotosPickerItem?) {
+        Task {
+            if let newValue, let data = try? await newValue.loadTransferable(type: Data.self) {
+                if isValidImage(data: data) {
+                    selectedImageData = data
+                } else {
+                    showImageError = true
+                }
+            }
+        }
+    }
+
     private func validateFields() -> Bool {
         !ownerName.isEmpty && !dogName.isEmpty && !breed.isEmpty
     }
 
-    /// Limits the length of the notes to 250 characters
     private func limitNotesLength() {
         if notes.count > 250 {
             notes = String(notes.prefix(250))
         }
     }
 
-    /// Validates the uploaded image for size and dimensions
     private func isValidImage(data: Data) -> Bool {
         let maxSizeMB = 5.0
         let maxSizeBytes = maxSizeMB * 1024 * 1024

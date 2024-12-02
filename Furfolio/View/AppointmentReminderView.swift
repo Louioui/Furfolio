@@ -30,15 +30,15 @@ struct AppointmentReminderView: View {
                             reminderRow(for: nextAppointment, owner: owner)
                         }
                     } else {
-                        Text(String(format: NSLocalizedString("%@ has no upcoming appointments.", comment: "Message for no upcoming appointments"), owner.ownerName))
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .accessibilityLabel(NSLocalizedString("No upcoming appointments", comment: "Accessibility label for no appointments"))
+                        noUpcomingAppointmentsRow(for: owner)
                     }
                 }
             }
             .navigationTitle(NSLocalizedString("Appointment Reminders", comment: "Navigation title for Appointment Reminder view"))
-            .alert(NSLocalizedString("Notification Status", comment: "Alert title for notification status"), isPresented: $showAlert) {
+            .alert(
+                NSLocalizedString("Notification Status", comment: "Alert title for notification status"),
+                isPresented: $showAlert
+            ) {
                 Button(NSLocalizedString("OK", comment: "Button label for OK"), role: .cancel) {}
             } message: {
                 Text(alertMessage)
@@ -51,28 +51,70 @@ struct AppointmentReminderView: View {
     /// Generates a row for the reminder
     private func reminderRow(for appointment: Appointment, owner: DogOwner) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(String(format: NSLocalizedString("Next Appointment: %@", comment: "Label for next appointment date"), globalAppointmentDateFormatter.string(from: appointment.date)))
-                .font(.subheadline)
-
+            appointmentDetailsText(for: appointment)
+            
             if let notes = appointment.notes, !notes.isEmpty {
-                Text(String(format: NSLocalizedString("Notes: %@", comment: "Label for appointment notes"), notes))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                appointmentNotesText(notes)
             }
 
-            Text(NSLocalizedString("Reminder: 24 hours before appointment", comment: "Reminder timing message"))
-                .font(.caption)
-                .foregroundColor(.gray)
+            reminderTimingText()
 
-            Button(NSLocalizedString("Set Reminder", comment: "Button label to set reminder")) {
-                scheduleAppointmentReminder(for: appointment, owner: owner)
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(!canScheduleReminder(for: appointment))
-            .opacity(canScheduleReminder(for: appointment) ? 1.0 : 0.5)
-            .accessibilityLabel(NSLocalizedString("Set reminder button", comment: "Accessibility label for set reminder button"))
+            reminderButton(for: appointment, owner: owner)
         }
         .padding(.vertical, 8)
+    }
+
+    // MARK: - Components
+
+    @ViewBuilder
+    private func appointmentDetailsText(for appointment: Appointment) -> some View {
+        Text(
+            String(
+                format: NSLocalizedString("Next Appointment: %@", comment: "Label for next appointment date"),
+                globalAppointmentDateFormatter.string(from: appointment.date)
+            )
+        )
+        .font(.subheadline)
+    }
+
+    @ViewBuilder
+    private func appointmentNotesText(_ notes: String) -> some View {
+        Text(
+            String(format: NSLocalizedString("Notes: %@", comment: "Label for appointment notes"), notes)
+        )
+        .font(.caption)
+        .foregroundColor(.secondary)
+    }
+
+    @ViewBuilder
+    private func reminderTimingText() -> some View {
+        Text(NSLocalizedString("Reminder: 24 hours before appointment", comment: "Reminder timing message"))
+            .font(.caption)
+            .foregroundColor(.gray)
+    }
+
+    @ViewBuilder
+    private func reminderButton(for appointment: Appointment, owner: DogOwner) -> some View {
+        Button(NSLocalizedString("Set Reminder", comment: "Button label to set reminder")) {
+            scheduleAppointmentReminder(for: appointment, owner: owner)
+        }
+        .buttonStyle(.borderedProminent)
+        .disabled(!canScheduleReminder(for: appointment))
+        .opacity(canScheduleReminder(for: appointment) ? 1.0 : 0.5)
+        .accessibilityLabel(NSLocalizedString("Set reminder button", comment: "Accessibility label for set reminder button"))
+    }
+
+    @ViewBuilder
+    private func noUpcomingAppointmentsRow(for owner: DogOwner) -> some View {
+        Text(
+            String(
+                format: NSLocalizedString("%@ has no upcoming appointments.", comment: "Message for no upcoming appointments"),
+                owner.ownerName
+            )
+        )
+        .font(.subheadline)
+        .foregroundColor(.secondary)
+        .accessibilityLabel(NSLocalizedString("No upcoming appointments", comment: "Accessibility label for no appointments"))
     }
 
     // MARK: - Reminder Scheduling
@@ -81,27 +123,57 @@ struct AppointmentReminderView: View {
     private func scheduleAppointmentReminder(for appointment: Appointment, owner: DogOwner) {
         guard let triggerDate = Calendar.current.date(byAdding: .hour, value: -24, to: appointment.date),
               triggerDate > Date() else {
-            alertMessage = NSLocalizedString("The appointment is too soon to schedule a reminder.", comment: "Error message for scheduling reminder too close to appointment time")
+            alertMessage = NSLocalizedString(
+                "The appointment is too soon to schedule a reminder.",
+                comment: "Error message for scheduling reminder too close to appointment time"
+            )
             showAlert = true
             return
         }
 
         let content = UNMutableNotificationContent()
         content.title = NSLocalizedString("Upcoming Appointment", comment: "Notification title for upcoming appointment")
-        content.body = String(format: NSLocalizedString("You have an appointment with %@ for %@ on %@.", comment: "Notification body for upcoming appointment"), owner.ownerName, owner.dogName, globalAppointmentDateFormatter.string(from: appointment.date))
+        content.body = String(
+            format: NSLocalizedString(
+                "You have an appointment with %@ for %@ on %@.",
+                comment: "Notification body for upcoming appointment"
+            ),
+            owner.ownerName,
+            owner.dogName,
+            globalAppointmentDateFormatter.string(from: appointment.date)
+        )
         if let notes = appointment.notes, !notes.isEmpty {
             content.body += String(format: NSLocalizedString(" Notes: %@", comment: "Additional notes for appointment"), notes)
         }
         content.sound = .default
 
-        let trigger = UNCalendarNotificationTrigger(dateMatching: Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: triggerDate), repeats: false)
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+        let trigger = UNCalendarNotificationTrigger(
+            dateMatching: Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: triggerDate),
+            repeats: false
+        )
+        let request = UNNotificationRequest(
+            identifier: UUID().uuidString,
+            content: content,
+            trigger: trigger
+        )
 
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                alertMessage = String(format: NSLocalizedString("Failed to schedule notification: %@", comment: "Error message for failed notification scheduling"), error.localizedDescription)
+                alertMessage = String(
+                    format: NSLocalizedString(
+                        "Failed to schedule notification: %@",
+                        comment: "Error message for failed notification scheduling"
+                    ),
+                    error.localizedDescription
+                )
             } else {
-                alertMessage = String(format: NSLocalizedString("Reminder successfully scheduled for %@'s appointment.", comment: "Success message for scheduling reminder"), owner.ownerName)
+                alertMessage = String(
+                    format: NSLocalizedString(
+                        "Reminder successfully scheduled for %@'s appointment.",
+                        comment: "Success message for scheduling reminder"
+                    ),
+                    owner.ownerName
+                )
             }
             showAlert = true
         }

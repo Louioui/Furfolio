@@ -22,16 +22,10 @@ final class Appointment: Identifiable {
         case custom = "Custom Package"
 
         var localized: String {
-            switch self {
-            case .basic:
-                return NSLocalizedString("Basic Package", comment: "Basic service package")
-            case .full:
-                return NSLocalizedString("Full Package", comment: "Full service package")
-            case .custom:
-                return NSLocalizedString("Custom Package", comment: "Custom service package")
-            }
+            NSLocalizedString(self.rawValue, comment: "Localized description of \(self.rawValue)")
         }
     }
+
     var serviceType: ServiceType
     var notes: String?
     var isRecurring: Bool
@@ -45,19 +39,21 @@ final class Appointment: Identifiable {
         case monthly = "Monthly"
 
         var localized: String {
-            switch self {
-            case .daily:
-                return NSLocalizedString("Daily", comment: "Daily recurrence")
-            case .weekly:
-                return NSLocalizedString("Weekly", comment: "Weekly recurrence")
-            case .monthly:
-                return NSLocalizedString("Monthly", comment: "Monthly recurrence")
-            }
+            NSLocalizedString(self.rawValue, comment: "Localized description of \(self.rawValue)")
         }
     }
 
     // MARK: - Initializer
-    init(date: Date, dogOwner: DogOwner, serviceType: ServiceType, notes: String? = nil, isRecurring: Bool = false, recurrenceFrequency: RecurrenceFrequency? = nil, petBirthdays: [Date] = [], profileBadges: [String] = []) {
+    init(
+        date: Date,
+        dogOwner: DogOwner,
+        serviceType: ServiceType,
+        notes: String? = nil,
+        isRecurring: Bool = false,
+        recurrenceFrequency: RecurrenceFrequency? = nil,
+        petBirthdays: [Date] = [],
+        profileBadges: [String] = []
+    ) {
         self.id = UUID()
         self.date = date
         self.dogOwner = dogOwner
@@ -106,7 +102,7 @@ final class Appointment: Identifiable {
 
     /// Generate a series of recurring appointments based on the specified frequency
     func generateRecurrences(until endDate: Date) -> [Appointment] {
-        guard isRecurring, let recurrenceFrequency else { return [] }
+        guard isRecurring, let recurrenceFrequency = recurrenceFrequency else { return [] }
         
         var appointments: [Appointment] = []
         var nextDate = date
@@ -144,8 +140,9 @@ final class Appointment: Identifiable {
         content.body = String(format: NSLocalizedString("You have a %@ appointment for %@ at %@.", comment: "Notification body"), serviceType.localized, dogOwner.ownerName, formattedDate)
         content.sound = .default
 
-        let triggerDate = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: date)
-        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
+        // Schedule notification 30 minutes before the appointment time
+        guard let triggerDate = Calendar.current.date(byAdding: .minute, value: -30, to: date) else { return }
+        let trigger = UNCalendarNotificationTrigger(dateMatching: Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: triggerDate), repeats: false)
 
         let request = UNNotificationRequest(identifier: id.uuidString, content: content, trigger: trigger)
 
@@ -170,9 +167,15 @@ final class Appointment: Identifiable {
         profileBadges.append(badge)
     }
 
-    /// Analyze pet behavior over time (Placeholder for future implementation)
+    /// Analyze pet behavior based on profile notes
     func analyzeBehavior() -> String {
-        // Example analysis logic
-        return NSLocalizedString("Behavioral analysis complete. No significant changes observed.", comment: "Behavior analysis result")
+        if let notes = notes?.lowercased() {
+            if notes.contains("anxious") {
+                return NSLocalizedString("The pet is anxious and may need extra care during appointments.", comment: "Behavior analysis: Anxious")
+            } else if notes.contains("aggressive") {
+                return NSLocalizedString("The pet has shown signs of aggression. Please handle with caution.", comment: "Behavior analysis: Aggressive")
+            }
+        }
+        return NSLocalizedString("No significant behavioral issues noted.", comment: "Behavior analysis: Neutral")
     }
 }

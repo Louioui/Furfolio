@@ -10,6 +10,10 @@ import Charts
 
 struct MetricsDashboardView: View {
     @State private var selectedDateRange: DateRange = .lastMonth
+    @State private var isCustomDateRangeActive = false
+    @State private var customStartDate: Date = Date()
+    @State private var customEndDate: Date = Date()
+    
     let dailyRevenues: [DailyRevenue]
     let appointments: [Appointment]
     let charges: [Charge]
@@ -17,7 +21,7 @@ struct MetricsDashboardView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                LazyVStack(alignment: .leading, spacing: 16) {
                     Text(NSLocalizedString("Metrics Dashboard", comment: "Title for the metrics dashboard"))
                         .font(.largeTitle)
                         .bold()
@@ -25,7 +29,7 @@ struct MetricsDashboardView: View {
 
                     // Revenue Trends Chart
                     RevenueChartView(dailyRevenues: filteredRevenues(for: selectedDateRange))
-
+                    
                     // Total Revenue Summary
                     TotalRevenueView(revenue: totalRevenue(for: selectedDateRange))
 
@@ -42,7 +46,7 @@ struct MetricsDashboardView: View {
                     PopularServicesView(charges: charges)
 
                     // Date Range Picker
-                    DateRangePicker(selectedDateRange: $selectedDateRange)
+                    DateRangePicker(selectedDateRange: $selectedDateRange, isCustomDateRangeActive: $isCustomDateRangeActive, customStartDate: $customStartDate, customEndDate: $customEndDate)
                 }
                 .padding()
             }
@@ -52,33 +56,28 @@ struct MetricsDashboardView: View {
 
     // MARK: - Helper Methods
 
+    private func calculateStartDate(for range: DateRange) -> Date? {
+        let calendar = Calendar.current
+        switch range {
+        case .lastWeek:
+            return calendar.date(byAdding: .day, value: -7, to: Date())
+        case .lastMonth:
+            return calendar.date(byAdding: .month, value: -1, to: Date())
+        case .custom:
+            return customStartDate
+        }
+    }
+
     private func filteredRevenues(for range: DateRange) -> [DailyRevenue] {
-        let startDate: Date? = {
-            switch range {
-            case .lastWeek: return Calendar.current.date(byAdding: .day, value: -7, to: Date())
-            case .lastMonth: return Calendar.current.date(byAdding: .month, value: -1, to: Date())
-            case .custom: return nil
-            }
-        }()
-        return dailyRevenues.filter { startDate == nil || $0.date >= startDate! }
+        guard let startDate = calculateStartDate(for: range) else { return dailyRevenues }
+        return dailyRevenues.filter { $0.date >= startDate && $0.date <= (customEndDate) }
     }
 
     private func totalRevenue(for range: DateRange) -> Double {
-        charges.filter { charge in
-            let calendar = Calendar.current
-            guard let startDate: Date = {
-                switch range {
-                case .lastWeek:
-                    return calendar.date(byAdding: .day, value: -7, to: Date())
-                case .lastMonth:
-                    return calendar.date(byAdding: .month, value: -1, to: Date())
-                case .custom:
-                    return nil
-                }
-            }() else { return true }
-            return charge.date >= startDate
+        guard let startDate = calculateStartDate(for: range) else {
+            return charges.reduce(0) { $0 + $1.amount }
         }
-        .reduce(0) { $0 + $1.amount }
+        return charges.filter { $0.date >= startDate }.reduce(0) { $0 + $1.amount }
     }
 
     private func upcomingAppointments() -> [Appointment] {
@@ -88,10 +87,10 @@ struct MetricsDashboardView: View {
     }
 
     private func chargesSummary() -> [String: Double] {
-        let summary = Charge.totalByType(charges: charges)
-        return summary.reduce(into: [String: Double]()) { result, item in
-            result[item.key.rawValue] = item.value
-        }
+        Charge.totalByType(charges: charges)
+            .reduce(into: [String: Double]()) { result, item in
+                result[item.key.rawValue] = item.value
+            }
     }
 }
 
@@ -123,6 +122,8 @@ struct RevenueChartView: View {
                 .chartXAxis {
                     AxisMarks(position: .bottom)
                 }
+                .accessibilityLabel("Revenue Trends Chart")
+                .accessibilityValue("Shows revenue trends over selected date range.")
             }
         }
         .padding()
@@ -143,6 +144,8 @@ struct TotalRevenueView: View {
             Text(revenue.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD")))
                 .font(.title2)
                 .bold()
+                .accessibilityLabel("Total Revenue")
+                .accessibilityValue(revenue.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD")))
         }
         .padding()
         .background(Color.yellow.opacity(0.1))
@@ -159,14 +162,10 @@ struct QuarterRevenueView: View {
         VStack(alignment: .leading) {
             Text(NSLocalizedString("Quarterly Revenue", comment: "Section title for quarterly revenue"))
                 .font(.headline)
-            let calendar = Calendar.current
-            let groupedByQuarter = Dictionary(grouping: dailyRevenues) { revenue in
-                let month = calendar.component(.month, from: revenue.date)
-                return (month - 1) / 3 + 1 // Calculate the quarter
-            }
+            let groupedByQuarter = groupRevenuesByQuarter(dailyRevenues)
 
             ForEach(groupedByQuarter.keys.sorted(), id: \.self) { quarter in
-                let totalRevenue = groupedByQuarter[quarter]?.reduce(0) { $0 + $1.totalAmount } ?? 0
+                let totalRevenue = groupedByQuarter[quarter] ?? 0
                 HStack {
                     Text("Q\(quarter)")
                         .font(.subheadline)
@@ -174,12 +173,23 @@ struct QuarterRevenueView: View {
                     Text(totalRevenue.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD")))
                         .font(.caption)
                         .foregroundColor(.secondary)
+                        .accessibilityLabel("Quarter \(quarter) Revenue")
+                        .accessibilityValue(totalRevenue.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD")))
                 }
             }
         }
         .padding()
         .background(Color.teal.opacity(0.1))
         .cornerRadius(8)
+    }
+
+    private func groupRevenuesByQuarter(_ revenues: [DailyRevenue]) -> [Int: Double] {
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: revenues) { revenue in
+            let month = calendar.component(.month, from: revenue.date)
+            return (month - 1) / 3 + 1
+        }
+        return grouped.mapValues { $0.reduce(0) { $0 + $1.totalAmount } }
     }
 }
 
@@ -232,7 +242,7 @@ struct ChargeSummaryView: View {
                         Text(type)
                             .font(.subheadline)
                         Spacer()
-                        Text("\(charges[type] ?? 0, specifier: "%.2f")")
+                        Text(charges[type]?.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD")) ?? "$0.00")
                             .font(.subheadline)
                             .foregroundColor(.primary)
                     }
@@ -283,6 +293,9 @@ struct PopularServicesView: View {
 
 struct DateRangePicker: View {
     @Binding var selectedDateRange: DateRange
+    @Binding var isCustomDateRangeActive: Bool
+    @Binding var customStartDate: Date
+    @Binding var customEndDate: Date
 
     var body: some View {
         Picker(NSLocalizedString("Date Range", comment: "Picker title for date range selection"), selection: $selectedDateRange) {
@@ -292,6 +305,21 @@ struct DateRangePicker: View {
         }
         .pickerStyle(SegmentedPickerStyle())
         .padding(.top)
+        .onChange(of: selectedDateRange) { _ in
+            isCustomDateRangeActive = selectedDateRange == .custom
+        }
+        if isCustomDateRangeActive {
+            DatePicker(
+                "Start Date",
+                selection: $customStartDate,
+                displayedComponents: .date
+            )
+            DatePicker(
+                "End Date",
+                selection: $customEndDate,
+                displayedComponents: .date
+            )
+        }
     }
 }
 
