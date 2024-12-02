@@ -24,7 +24,12 @@ struct AddDogOwnerView: View {
     @State private var dogBirthdate: Date = Date() // Non-optional date with default value
     @State private var age: Int? = nil
 
-    var onSave: (String, String, String, String, String, String, Data?, Date?) -> Void
+    // Health Record Fields
+    @State private var healthCondition = ""
+    @State private var treatment = ""
+    @State private var healthNotes = ""
+
+    var onSave: (String, String, String, String, String, String, Data?, Date?, String, String, String) -> Void
 
     var body: some View {
         NavigationView {
@@ -33,6 +38,7 @@ struct AddDogOwnerView: View {
                 dogInformationSection()
                 dogAgeSection()
                 dogImageSection()
+                healthRecordSection() // New Section for Health Record
             }
             .navigationTitle(NSLocalizedString("Add Dog Owner", comment: "Navigation title for Add Dog Owner view"))
             .toolbar {
@@ -142,6 +148,17 @@ struct AddDogOwnerView: View {
         }
     }
 
+    // MARK: - Health Record Section (New Section)
+
+    @ViewBuilder
+    private func healthRecordSection() -> some View {
+        Section(header: sectionHeader(icon: "heart.fill", title: "Health Record")) {
+            customTextField(placeholder: "Health Condition", text: $healthCondition)
+            customTextField(placeholder: "Treatment", text: $treatment)
+            customTextField(placeholder: "Health Notes (Optional)", text: $healthNotes)
+        }
+    }
+
     // MARK: - Toolbar Content
 
     @ToolbarContentBuilder
@@ -180,7 +197,7 @@ struct AddDogOwnerView: View {
     private func handleSave() {
         if validateFields() {
             isSaving = true
-            onSave(ownerName, dogName, breed, contactInfo, address, notes, selectedImageData, dogBirthdate)
+            onSave(ownerName, dogName, breed, contactInfo, address, notes, selectedImageData, dogBirthdate, healthCondition, treatment, healthNotes)
             dismiss()
         } else {
             showErrorAlert = true

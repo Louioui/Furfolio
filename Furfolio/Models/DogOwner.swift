@@ -22,6 +22,7 @@ final class DogOwner: Identifiable {
     var birthdate: Date? // Optional birthdate for the dog
     @Relationship(deleteRule: .cascade) var appointments: [Appointment] = []
     @Relationship(deleteRule: .cascade) var charges: [Charge] = []
+    @Relationship(deleteRule: .cascade) var healthRecords: [HealthRecord] = [] // Add relationship to HealthRecord
 
     // MARK: - Initializer
     init(
@@ -32,7 +33,8 @@ final class DogOwner: Identifiable {
         address: String,
         dogImage: Data? = nil,
         notes: String = "",
-        birthdate: Date? = nil
+        birthdate: Date? = nil,
+        healthRecords: [HealthRecord] = [] // Add healthRecords parameter to initializer
     ) {
         self.id = UUID()
         self.ownerName = ownerName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -43,6 +45,7 @@ final class DogOwner: Identifiable {
         self.dogImage = dogImage
         self.notes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
         self.birthdate = birthdate
+        self.healthRecords = healthRecords // Initialize healthRecords
     }
 
     // MARK: - Computed Properties
@@ -139,6 +142,11 @@ final class DogOwner: Identifiable {
         guard date > Date() else { return }
         let newAppointment = Appointment(date: date, dogOwner: self, serviceType: serviceType, notes: notes)
         appointments.append(newAppointment)
+    }
+
+    func addHealthRecord(date: Date, healthCondition: String, treatment: String, notes: String = "") {
+        let newHealthRecord = HealthRecord(dogOwner: self, date: date, healthCondition: healthCondition, treatment: treatment, notes: notes)
+        healthRecords.append(newHealthRecord)
     }
 
     func updateInfo(

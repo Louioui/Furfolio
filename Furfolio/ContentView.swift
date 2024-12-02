@@ -50,8 +50,8 @@ struct ContentView: View {
                     }
                 }
                 .sheet(isPresented: $isShowingAddOwnerSheet) {
-                    AddDogOwnerView { ownerName, dogName, breed, contactInfo, address, notes, selectedImageData, birthdate in
-                        addDogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, notes: notes, selectedImageData: selectedImageData, birthdate: birthdate)
+                    AddDogOwnerView { ownerName, dogName, breed, contactInfo, address, notes, selectedImageData, birthdate, healthCondition, treatment, healthNotes in
+                        addDogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, notes: notes, selectedImageData: selectedImageData, birthdate: birthdate, healthCondition: healthCondition, treatment: treatment, healthNotes: healthNotes)
                     }
                 }
                 .sheet(isPresented: $isShowingMetricsView) {
@@ -229,7 +229,7 @@ struct ContentView: View {
     }
 
     // MARK: - Data Management
-    private func addDogOwner(ownerName: String, dogName: String, breed: String, contactInfo: String, address: String, notes: String, selectedImageData: Data?, birthdate: Date?) {
+    private func addDogOwner(ownerName: String, dogName: String, breed: String, contactInfo: String, address: String, notes: String, selectedImageData: Data?, birthdate: Date?, healthCondition: String, treatment: String, healthNotes: String) {
         withAnimation {
             let newOwner = DogOwner(
                 ownerName: ownerName,
@@ -241,6 +241,11 @@ struct ContentView: View {
                 notes: notes,
                 birthdate: birthdate
             )
+            
+            // Create HealthRecord and add it to newOwner's healthRecords
+            let healthRecord = HealthRecord(dogOwner: newOwner, date: Date(), healthCondition: healthCondition, treatment: treatment, notes: healthNotes)
+            newOwner.healthRecords.append(healthRecord)
+
             modelContext.insert(newOwner)
         }
     }
