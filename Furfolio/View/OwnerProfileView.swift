@@ -13,8 +13,10 @@ struct OwnerProfileView: View {
     @State private var isEditing = false
     @State private var showAppointments = true
     @State private var showCharges = true
+    @State private var showHealthRecords = true // Toggle for Health Records
     @State private var showAddAppointment = false
     @State private var showAddCharge = false
+    @State private var showAddHealthRecord = false // Toggle for Add Health Record
 
     var body: some View {
         NavigationView {
@@ -31,6 +33,9 @@ struct OwnerProfileView: View {
 
                     // Charge History Section
                     chargeHistorySection()
+
+                    // Health Record Section
+                    healthRecordHistorySection() // New section for Health Records
                 }
                 .padding()
             }
@@ -56,6 +61,11 @@ struct OwnerProfileView: View {
             }
             .sheet(isPresented: $showAddCharge) {
                 AddChargeView(dogOwner: dogOwner)
+            }
+            .sheet(isPresented: $showAddHealthRecord) {
+                AddHealthRecordView(dogOwner: dogOwner) { healthRecord in
+                    showAddHealthRecord = false
+                }
             }
         }
     }
@@ -141,6 +151,28 @@ struct OwnerProfileView: View {
         .cornerRadius(10)
     }
 
+    // MARK: - Health Record History Section
+    @ViewBuilder
+    private func healthRecordHistorySection() -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(NSLocalizedString("Health Record History", comment: "Header for Health Record History section"))
+                    .font(.headline)
+                Spacer()
+                Button(action: { withAnimation { showHealthRecords.toggle() } }) {
+                    Text(showHealthRecords ? NSLocalizedString("Hide", comment: "Hide button label") : NSLocalizedString("Show", comment: "Show button label"))
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                }
+                addHealthRecordButton
+            }
+            healthRecordList
+        }
+        .padding()
+        .background(Color.green.opacity(0.1))
+        .cornerRadius(10)
+    }
+
     // MARK: - Helper Views
     private var contactInfoText: some View {
         Group {
@@ -196,6 +228,14 @@ struct OwnerProfileView: View {
         .foregroundColor(.blue)
     }
 
+    private var addHealthRecordButton: some View {
+        Button(action: { showAddHealthRecord = true }) {
+            Image(systemName: "heart.badge.plus")
+                .font(.headline)
+        }
+        .foregroundColor(.blue)
+    }
+
     private var appointmentList: some View {
         Group {
             if dogOwner.appointments.isEmpty {
@@ -245,6 +285,31 @@ struct OwnerProfileView: View {
                         Text(charge.amount.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD")))
                             .font(.subheadline)
                             .foregroundColor(.primary)
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+        }
+    }
+
+    private var healthRecordList: some View {
+        Group {
+            if dogOwner.healthRecords.isEmpty {
+                Text(NSLocalizedString("No health records available.", comment: "Message for no health records"))
+                    .foregroundColor(.gray)
+                    .italic()
+            } else {
+                ForEach(dogOwner.healthRecords.sorted(by: { $0.date > $1.date })) { record in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(String(format: NSLocalizedString("Date: %@", comment: "Health record date label"), record.date.formatted(.dateTime.month().day().year())))
+                        Text(String(format: NSLocalizedString("Condition: %@", comment: "Health condition label"), record.healthCondition))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        if let notes = record.notes, !notes.isEmpty {
+                            Text(String(format: NSLocalizedString("Notes: %@", comment: "Health record notes label"), notes))
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
                     }
                     .padding(.vertical, 4)
                 }

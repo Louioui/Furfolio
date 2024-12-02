@@ -22,6 +22,11 @@ struct EditDogOwnerView: View {
     @State private var showValidationError = false
     @State private var showImageError = false
 
+    // Health Record state
+    @State private var healthCondition: String = ""
+    @State private var treatment: String = ""
+    @State private var healthNotes: String = ""
+
     var dogOwner: DogOwner
     var onSave: (DogOwner) -> Void
 
@@ -44,6 +49,7 @@ struct EditDogOwnerView: View {
                 ownerInformationSection()
                 dogInformationSection()
                 dogImageSection()
+                healthRecordSection() // Health Record section added
             }
             .navigationTitle("Edit Dog Owner")
             .toolbar {
@@ -122,6 +128,14 @@ struct EditDogOwnerView: View {
         }
     }
 
+    private func healthRecordSection() -> some View {
+        Section(header: Text("Health Record")) {
+            customTextField(placeholder: "Health Condition", text: $healthCondition)
+            customTextField(placeholder: "Treatment", text: $treatment)
+            customTextField(placeholder: "Health Notes (Optional)", text: $healthNotes)
+        }
+    }
+
     private func notesField() -> some View {
         VStack(alignment: .leading) {
             customTextField(placeholder: "Notes (Optional)", text: $notes)
@@ -163,6 +177,7 @@ struct EditDogOwnerView: View {
         dogOwner.address = address
         dogOwner.notes = notes
         dogOwner.dogImage = selectedImageData
+        dogOwner.healthRecords.append(HealthRecord(dogOwner: dogOwner, date: Date(), healthCondition: healthCondition, treatment: treatment, notes: healthNotes)) // Add the health record
         onSave(dogOwner)
     }
 
