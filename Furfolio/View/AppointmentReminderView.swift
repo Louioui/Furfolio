@@ -147,6 +147,11 @@ struct AppointmentReminderView: View {
         }
         content.sound = .default
 
+        // Additional behavior tags in the notification content (if applicable)
+        if !owner.behaviorTags.isEmpty {
+            content.body += "\nBehavior Tags: \(owner.behaviorTags.joined(separator: ", "))"
+        }
+
         let trigger = UNCalendarNotificationTrigger(
             dateMatching: Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: triggerDate),
             repeats: false

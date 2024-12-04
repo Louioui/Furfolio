@@ -15,6 +15,7 @@ struct AddChargeView: View {
     @State private var serviceType: ChargeType = .basic
     @State private var chargeAmount: Double? = nil
     @State private var chargeNotes = ""
+    @State private var behaviorTags: [String] = []  // New behavior tags array for advanced behavior tracking
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
     @State private var isSaving = false
@@ -47,6 +48,7 @@ struct AddChargeView: View {
             serviceTypePicker()
             chargeAmountInput()
             notesField()
+            behaviorTagsField() // New section for behavior tags
         }
     }
 
@@ -72,7 +74,7 @@ struct AddChargeView: View {
         )
         .keyboardType(.decimalPad)
         .onChange(of: chargeAmount) { newValue in
-            if let newValue {
+            if let newValue = newValue {
                 chargeAmount = max(newValue, 0.0) // Ensure non-negative
             }
         }
@@ -95,6 +97,27 @@ struct AddChargeView: View {
                 Text(NSLocalizedString("Notes must be 250 characters or less.", comment: "Warning for note length"))
                     .font(.caption)
                     .foregroundColor(.red)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func behaviorTagsField() -> some View {
+        VStack(alignment: .leading) {
+            TextField(
+                NSLocalizedString("Behavior Tags (Optional)", comment: "Text field label for behavior tags"),
+                text: Binding(
+                    get: { behaviorTags.joined(separator: ", ") },
+                    set: { behaviorTags = $0.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) } }
+                )
+            )
+            .textFieldStyle(RoundedBorderTextFieldStyle())
+            .autocapitalization(.sentences)
+
+            if behaviorTags.isEmpty == false {
+                Text("Behavior tags: \(behaviorTags.joined(separator: ", "))")
+                    .font(.caption)
+                    .foregroundColor(.blue)
             }
         }
     }
@@ -136,7 +159,8 @@ struct AddChargeView: View {
             type: Charge.ServiceType(rawValue: serviceType.rawValue) ?? .custom,
             amount: chargeAmount ?? 0.0,
             dogOwner: dogOwner,
-            notes: chargeNotes
+            notes: chargeNotes,
+            behavioralTags: behaviorTags // Change 'behaviorTags' to 'behavioralTags'
         )
 
         withAnimation {
@@ -144,7 +168,6 @@ struct AddChargeView: View {
             dogOwner.charges.append(newCharge)
         }
     }
-
     // MARK: - Validation Methods
 
     /// Validates the charge and checks for errors

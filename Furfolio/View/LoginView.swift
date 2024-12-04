@@ -12,6 +12,7 @@ struct LoginView: View {
     @State private var password: String = ""
     @State private var isAuthenticated = false
     @State private var authenticationError: String? = nil
+    @State private var showPassword = false  // State to toggle password visibility
     
     var body: some View {
         VStack(spacing: 16) {
@@ -32,14 +33,34 @@ struct LoginView: View {
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
                 .accessibilityLabel(NSLocalizedString("Username", comment: "Accessibility label for username field"))
             
-            // Password Input
-            SecureField(NSLocalizedString("Password", comment: "Placeholder for password input"), text: $password)
-                .padding()
-                .background(Color(UIColor.secondarySystemBackground))
-                .cornerRadius(8)
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
-                .accessibilityLabel(NSLocalizedString("Password", comment: "Accessibility label for password field"))
-            
+            // Password Input with visibility toggle
+            HStack {
+                if showPassword {
+                    TextField(NSLocalizedString("Password", comment: "Placeholder for password input"), text: $password)
+                        .padding()
+                        .background(Color(UIColor.secondarySystemBackground))
+                        .cornerRadius(8)
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
+                        .accessibilityLabel(NSLocalizedString("Password", comment: "Accessibility label for password field"))
+                } else {
+                    SecureField(NSLocalizedString("Password", comment: "Placeholder for password input"), text: $password)
+                        .padding()
+                        .background(Color(UIColor.secondarySystemBackground))
+                        .cornerRadius(8)
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
+                        .accessibilityLabel(NSLocalizedString("Password", comment: "Accessibility label for password field"))
+                }
+                
+                Button(action: {
+                    showPassword.toggle()  // Toggle password visibility
+                }) {
+                    Image(systemName: showPassword ? "eye.slash.fill" : "eye.fill")
+                        .foregroundColor(.gray)
+                }
+                .padding(.trailing, 8)
+                .accessibilityLabel(NSLocalizedString("Toggle password visibility", comment: "Accessibility label for password visibility toggle"))
+            }
+
             // Login Button
             Button(action: {
                 authenticateUser(username: username, password: password)

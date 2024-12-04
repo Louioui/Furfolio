@@ -13,6 +13,10 @@ struct AddHealthRecordView: View {
     @State private var treatment: String = ""
     @State private var healthNotes: String = ""
     @State private var isSaving: Bool = false
+    
+    // Behavior Tags
+    @State private var behaviorTags: [String] = []  // Array to store behavior tags
+    @State private var behaviorTagsString: String = "" // String to capture input for tags
 
     let dogOwner: DogOwner
     let onSave: (HealthRecord) -> Void
@@ -28,6 +32,20 @@ struct AddHealthRecordView: View {
                 }
                 Section(header: Text("Notes (Optional)")) {
                     TextField("Enter any additional notes", text: $healthNotes)
+                }
+
+                // Behavior Tags Section
+                Section(header: Text("Behavior Tags (Optional)")) {
+                    TextField("Enter behavior tags", text: $behaviorTagsString)
+                        .onSubmit {
+                            if !behaviorTags.contains(behaviorTagsString) {
+                                behaviorTags.append(behaviorTagsString)
+                            }
+                            behaviorTagsString = "" // Reset the text field after submission
+                        }
+                    List(behaviorTags, id: \.self) { tag in
+                        Text(tag)
+                    }
                 }
             }
             .navigationTitle("Add Health Record")
@@ -55,7 +73,8 @@ struct AddHealthRecordView: View {
             date: Date(),
             healthCondition: healthCondition,
             treatment: treatment,
-            notes: healthNotes
+            notes: healthNotes,
+            behaviorTags: behaviorTags // Include behavior tags when saving
         )
 
         onSave(newHealthRecord)

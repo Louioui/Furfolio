@@ -13,7 +13,7 @@ struct MetricsDashboardView: View {
     @State private var isCustomDateRangeActive = false
     @State private var customStartDate: Date = Date()
     @State private var customEndDate: Date = Date()
-    
+
     let dailyRevenues: [DailyRevenue]
     let appointments: [Appointment]
     let charges: [Charge]
@@ -29,7 +29,7 @@ struct MetricsDashboardView: View {
 
                     // Revenue Trends Chart
                     RevenueChartView(dailyRevenues: filteredRevenues(for: selectedDateRange))
-                    
+
                     // Total Revenue Summary
                     TotalRevenueView(revenue: totalRevenue(for: selectedDateRange))
 
@@ -70,7 +70,7 @@ struct MetricsDashboardView: View {
 
     private func filteredRevenues(for range: DateRange) -> [DailyRevenue] {
         guard let startDate = calculateStartDate(for: range) else { return dailyRevenues }
-        return dailyRevenues.filter { $0.date >= startDate && $0.date <= (customEndDate) }
+        return dailyRevenues.filter { $0.date >= startDate && $0.date <= customEndDate }
     }
 
     private func totalRevenue(for range: DateRange) -> Double {

@@ -19,6 +19,8 @@ struct AddAppointmentView: View {
     @State private var conflictWarning: String? = nil
     @State private var isSaving = false
     @State private var enableReminder = false
+    @State private var behaviorTags: [String] = []  // Behavior tags array
+    @State private var behaviorTagsString: String = "" // New string to hold user input for behavior tags
 
     var body: some View {
         NavigationView {
@@ -82,6 +84,20 @@ struct AddAppointmentView: View {
                     requestNotificationPermission()
                 }
             }
+
+            // New section for adding behavior tags
+            Section(header: Text("Behavior Tags")) {
+                TextField("Enter behavior tags", text: $behaviorTagsString)
+                    .onSubmit {
+                        if !behaviorTags.contains(behaviorTagsString) {
+                            behaviorTags.append(behaviorTagsString)
+                        }
+                        behaviorTagsString = ""
+                    }
+                List(behaviorTags, id: \.self) { tag in
+                    Text(tag)
+                }
+            }
         }
     }
 
@@ -128,7 +144,8 @@ struct AddAppointmentView: View {
             date: appointmentDate,
             dogOwner: dogOwner,
             serviceType: serviceType,
-            notes: appointmentNotes
+            notes: appointmentNotes,
+            behavioralTags: behaviorTags // Use 'behavioralTags' instead of 'behaviorTags'
         )
 
         withAnimation {

@@ -1,10 +1,3 @@
-//
-//  Appointment.swift
-//  Furfolio
-//
-//  Created by mac on 11/18/24.
-//
-
 import Foundation
 import SwiftData
 import UserNotifications
@@ -32,6 +25,7 @@ final class Appointment: Identifiable {
     var recurrenceFrequency: RecurrenceFrequency?
     var isNotified: Bool = false
     var profileBadges: [String] // Profile badges for pets
+    var behavioralTags: [String] // New property to track advanced behavioral tags (e.g., Sensitive Skin, Likes/Dislikes Certain Treatments)
 
     enum RecurrenceFrequency: String, Codable, CaseIterable {
         case daily = "Daily"
@@ -52,7 +46,8 @@ final class Appointment: Identifiable {
         isRecurring: Bool = false,
         recurrenceFrequency: RecurrenceFrequency? = nil,
         petBirthdays: [Date] = [],
-        profileBadges: [String] = []
+        profileBadges: [String] = [],
+        behavioralTags: [String] = [] // Initialize new behavioral tags
     ) {
         self.id = UUID()
         self.date = date
@@ -63,44 +58,38 @@ final class Appointment: Identifiable {
         self.recurrenceFrequency = recurrenceFrequency
         self.petBirthdays = petBirthdays
         self.profileBadges = profileBadges
+        self.behavioralTags = behavioralTags // Store behavioral tags
     }
 
     // MARK: - Computed Properties
 
-    /// Check if the appointment is valid (future date)
     var isValid: Bool {
         date > Date()
     }
 
-    /// Check if the appointment is a past event
     var isPast: Bool {
         date <= Date()
     }
 
-    /// Time until the appointment in minutes
     var timeUntil: Int? {
         guard isValid else { return nil }
         return Calendar.current.dateComponents([.minute], from: Date(), to: date).minute
     }
 
-    /// Format the appointment date for display
     var formattedDate: String {
         date.formatted(.dateTime.month().day().hour().minute())
     }
 
-    /// Check for upcoming pet birthdays
     var upcomingBirthdays: [Date] {
         petBirthdays.filter { Calendar.current.isDateInToday($0) }
     }
 
     // MARK: - Methods
 
-    /// Check for conflicts with another appointment
     func conflictsWith(other: Appointment, bufferMinutes: Int = 60) -> Bool {
         abs(self.date.timeIntervalSince(other.date)) < TimeInterval(bufferMinutes * 60)
     }
 
-    /// Generate a series of recurring appointments based on the specified frequency
     func generateRecurrences(until endDate: Date) -> [Appointment] {
         guard isRecurring, let recurrenceFrequency = recurrenceFrequency else { return [] }
         
@@ -114,24 +103,28 @@ final class Appointment: Identifiable {
                 serviceType: serviceType,
                 notes: notes,
                 isRecurring: true,
-                recurrenceFrequency: recurrenceFrequency
+                recurrenceFrequency: recurrenceFrequency,
+                behavioralTags: behavioralTags // Include behavioral tags in recurrences
             )
             appointments.append(newAppointment)
             
-            switch recurrenceFrequency {
-            case .daily:
-                nextDate = Calendar.current.date(byAdding: .day, value: 1, to: nextDate) ?? nextDate
-            case .weekly:
-                nextDate = Calendar.current.date(byAdding: .weekOfYear, value: 1, to: nextDate) ?? nextDate
-            case .monthly:
-                nextDate = Calendar.current.date(byAdding: .month, value: 1, to: nextDate) ?? nextDate
-            }
+            nextDate = calculateNextDate(from: nextDate, frequency: recurrenceFrequency)
         }
         
         return appointments
     }
 
-    /// Schedule a notification for the appointment
+    private func calculateNextDate(from date: Date, frequency: RecurrenceFrequency) -> Date {
+        switch frequency {
+        case .daily:
+            return Calendar.current.date(byAdding: .day, value: 1, to: date) ?? date
+        case .weekly:
+            return Calendar.current.date(byAdding: .weekOfYear, value: 1, to: date) ?? date
+        case .monthly:
+            return Calendar.current.date(byAdding: .month, value: 1, to: date) ?? date
+        }
+    }
+
     func scheduleNotification() {
         guard !isNotified, isValid else { return }
 
@@ -140,10 +133,13 @@ final class Appointment: Identifiable {
         content.body = String(format: NSLocalizedString("You have a %@ appointment for %@ at %@.", comment: "Notification body"), serviceType.localized, dogOwner.ownerName, formattedDate)
         content.sound = .default
 
-        // Schedule notification 30 minutes before the appointment time
         guard let triggerDate = Calendar.current.date(byAdding: .minute, value: -30, to: date) else { return }
         let trigger = UNCalendarNotificationTrigger(dateMatching: Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: triggerDate), repeats: false)
 
+        scheduleLocalNotification(content: content, trigger: trigger)
+    }
+
+    private func scheduleLocalNotification(content: UNMutableNotificationContent, trigger: UNCalendarNotificationTrigger) {
         let request = UNNotificationRequest(identifier: id.uuidString, content: content, trigger: trigger)
 
         UNUserNotificationCenter.current().add(request) { error in
@@ -155,19 +151,16 @@ final class Appointment: Identifiable {
         isNotified = true
     }
 
-    /// Cancel a scheduled notification
     func cancelNotification() {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [id.uuidString])
         isNotified = false
     }
 
-    /// Add a badge to a pet profile
     func addBadge(_ badge: String) {
         guard !profileBadges.contains(badge) else { return }
         profileBadges.append(badge)
     }
 
-    /// Analyze pet behavior based on profile notes
     func analyzeBehavior() -> String {
         if let notes = notes?.lowercased() {
             if notes.contains("anxious") {

@@ -1,28 +1,28 @@
-//
-//  DogOwner.swift
-//  Furfolio
-//
-//  Created by mac on 11/18/24.
-//
-
 import SwiftData
 import Foundation
 import UIKit
 
 @Model
-final class DogOwner: Identifiable {
+final class DogOwner: Identifiable, ObservableObject {
+    // Stored properties with proper property wrappers
     @Attribute(.unique) var id: UUID
-    var ownerName: String
-    var dogName: String
-    var breed: String
-    var contactInfo: String
-    var address: String
+    @Attribute var ownerName: String
+    @Attribute var dogName: String
+    @Attribute var breed: String
+    @Attribute var contactInfo: String
+    @Attribute var address: String
     @Attribute(.externalStorage) var dogImage: Data? // Store large data externally
-    var notes: String
-    var birthdate: Date? // Optional birthdate for the dog
+    @Attribute var notes: String
+    @Attribute var birthdate: Date? // Optional birthdate for the dog
+    
+    // Use @Relationship for relationships, not @Attribute
     @Relationship(deleteRule: .cascade) var appointments: [Appointment] = []
     @Relationship(deleteRule: .cascade) var charges: [Charge] = []
     @Relationship(deleteRule: .cascade) var healthRecords: [HealthRecord] = [] // Add relationship to HealthRecord
+    
+    // Non-relationship properties can still use @Attribute
+    @Attribute var badges: [String] = [] // Added badges array
+    @Attribute var behaviorTags: [String] = [] // Added behavioral tags array
 
     // MARK: - Initializer
     init(
@@ -34,7 +34,8 @@ final class DogOwner: Identifiable {
         dogImage: Data? = nil,
         notes: String = "",
         birthdate: Date? = nil,
-        healthRecords: [HealthRecord] = [] // Add healthRecords parameter to initializer
+        healthRecords: [HealthRecord] = [], // Add healthRecords parameter to initializer
+        behaviorTags: [String] = [] // Added behavioral tags to initializer
     ) {
         self.id = UUID()
         self.ownerName = ownerName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -46,6 +47,21 @@ final class DogOwner: Identifiable {
         self.notes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
         self.birthdate = birthdate
         self.healthRecords = healthRecords // Initialize healthRecords
+        self.behaviorTags = behaviorTags // Initialize behavioral tags
+    }
+
+    // MARK: - Badge Management (New Feature)
+    func addBadge(_ badge: String) {
+        if !badges.contains(badge) {
+            badges.append(badge)
+        }
+    }
+
+    // MARK: - Behavioral Tags Management
+    func addBehavioralTag(_ tag: String) {
+        if !behaviorTags.contains(tag) {
+            behaviorTags.append(tag)
+        }
     }
 
     // MARK: - Computed Properties
@@ -99,16 +115,6 @@ final class DogOwner: Identifiable {
     }
 
     // MARK: - Methods
-
-    func isValidImage() -> Bool {
-        guard let data = dogImage, let image = UIImage(data: data) else { return false }
-        let maxSizeMB = 5.0
-        let dataSizeMB = Double(data.count) / (1024.0 * 1024.0)
-        let isValidSize = dataSizeMB <= maxSizeMB
-        let isValidDimensions = image.size.width > 100 && image.size.height > 100
-        let isValidFormat = (data.isJPEG || data.isPNG)
-        return isValidSize && isValidDimensions && isValidFormat
-    }
 
     func resizeImage(targetWidth: CGFloat) -> Data? {
         guard let data = dogImage, let image = UIImage(data: data) else { return nil }
@@ -215,16 +221,9 @@ final class DogOwner: Identifiable {
         let ageComponents = calendar.dateComponents([.year], from: birthdate, to: Date())
         return ageComponents.year
     }
-}
 
-extension Data {
-    var isJPEG: Bool {
-        // JPEG images start with bytes: 0xFF 0xD8 and end with 0xFF 0xD9
-        return self.starts(with: [0xFF, 0xD8]) && self.suffix(2) == [0xFF, 0xD9]
-    }
-    
-    var isPNG: Bool {
-        // PNG images start with: 0x89 0x50 0x4E 0x47
-        return self.starts(with: [0x89, 0x50, 0x4E, 0x47])
+    // MARK: - Dog Computed Property
+    var dog: Dog {
+        return Dog(name: dogName, breed: breed, badges: badges, behaviorTags: behaviorTags)
     }
 }

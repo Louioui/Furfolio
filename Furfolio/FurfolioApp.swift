@@ -95,6 +95,7 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
+        // Improved feedback when a notification is about to be shown
         print("Notification will be presented: \(notification.request.content.body)")
         completionHandler([.alert, .sound])
     }
@@ -104,6 +105,7 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
+        // Handling notification response and adding more user feedback
         print("Notification received: \(response.notification.request.content.body)")
         completionHandler()
     }

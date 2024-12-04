@@ -27,6 +27,10 @@ struct EditDogOwnerView: View {
     @State private var treatment: String = ""
     @State private var healthNotes: String = ""
 
+    // Behavior Tags state
+    @State private var behaviorTags: [String] = [] // Behavior tags array
+    @State private var behaviorTagsString: String = "" // String for new tag entry
+
     var dogOwner: DogOwner
     var onSave: (DogOwner) -> Void
 
@@ -50,6 +54,7 @@ struct EditDogOwnerView: View {
                 dogInformationSection()
                 dogImageSection()
                 healthRecordSection() // Health Record section added
+                behaviorTagsSection() // Behavior Tags section added
             }
             .navigationTitle("Edit Dog Owner")
             .toolbar {
@@ -136,6 +141,21 @@ struct EditDogOwnerView: View {
         }
     }
 
+    private func behaviorTagsSection() -> some View {
+        Section(header: Text("Behavior Tags")) {
+            TextField("Enter Behavior Tag", text: $behaviorTagsString)
+                .onSubmit {
+                    if !behaviorTags.contains(behaviorTagsString) {
+                        behaviorTags.append(behaviorTagsString)
+                    }
+                    behaviorTagsString = "" // Reset text after submitting
+                }
+            List(behaviorTags, id: \.self) { tag in
+                Text(tag)
+            }
+        }
+    }
+
     private func notesField() -> some View {
         VStack(alignment: .leading) {
             customTextField(placeholder: "Notes (Optional)", text: $notes)
@@ -178,6 +198,7 @@ struct EditDogOwnerView: View {
         dogOwner.notes = notes
         dogOwner.dogImage = selectedImageData
         dogOwner.healthRecords.append(HealthRecord(dogOwner: dogOwner, date: Date(), healthCondition: healthCondition, treatment: treatment, notes: healthNotes)) // Add the health record
+        dogOwner.behaviorTags = behaviorTags // Save the behavior tags
         onSave(dogOwner)
     }
 

@@ -79,6 +79,15 @@ struct DogOwnerRowView: View {
                     .italic()
                     .lineLimit(2)
             }
+
+            // Displaying behavioral tags if available
+            if !dogOwner.behaviorTags.isEmpty {
+                Text(String(format: NSLocalizedString("Behavior Tags: %@", comment: "Label for behavior tags"), dogOwner.behaviorTags.joined(separator: ", ")))
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .italic()
+                    .lineLimit(1)
+            }
         }
     }
 

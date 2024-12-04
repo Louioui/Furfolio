@@ -29,7 +29,11 @@ struct AddDogOwnerView: View {
     @State private var treatment = ""
     @State private var healthNotes = ""
 
-    var onSave: (String, String, String, String, String, String, Data?, Date?, String, String, String) -> Void
+    // Behavior Tags Field
+    @State private var behaviorTags: [String] = []  // Array to store behavior tags
+    @State private var behaviorTagsString: String = "" // String to capture input for tags
+
+    var onSave: (String, String, String, String, String, String, Data?, Date?, String, String, String, [String]) -> Void
 
     var body: some View {
         NavigationView {
@@ -39,6 +43,7 @@ struct AddDogOwnerView: View {
                 dogAgeSection()
                 dogImageSection()
                 healthRecordSection() // New Section for Health Record
+                behaviorTagsSection() // New Section for Behavior Tags
             }
             .navigationTitle(NSLocalizedString("Add Dog Owner", comment: "Navigation title for Add Dog Owner view"))
             .toolbar {
@@ -159,6 +164,24 @@ struct AddDogOwnerView: View {
         }
     }
 
+    // MARK: - Behavior Tags Section (New Section)
+
+    @ViewBuilder
+    private func behaviorTagsSection() -> some View {
+        Section(header: sectionHeader(icon: "tag.fill", title: "Behavior Tags")) {
+            TextField("Enter Behavior Tags", text: $behaviorTagsString)
+                .onSubmit {
+                    if !behaviorTags.contains(behaviorTagsString) {
+                        behaviorTags.append(behaviorTagsString)
+                    }
+                    behaviorTagsString = "" // Reset the text field
+                }
+            List(behaviorTags, id: \.self) { tag in
+                Text(tag)
+            }
+        }
+    }
+
     // MARK: - Toolbar Content
 
     @ToolbarContentBuilder
@@ -197,7 +220,7 @@ struct AddDogOwnerView: View {
     private func handleSave() {
         if validateFields() {
             isSaving = true
-            onSave(ownerName, dogName, breed, contactInfo, address, notes, selectedImageData, dogBirthdate, healthCondition, treatment, healthNotes)
+            onSave(ownerName, dogName, breed, contactInfo, address, notes, selectedImageData, dogBirthdate, healthCondition, treatment, healthNotes, behaviorTags) // Save behavior tags
             dismiss()
         } else {
             showErrorAlert = true

@@ -13,26 +13,25 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var dogOwners: [DogOwner]
     @Query private var dailyRevenues: [DailyRevenue]
-
+    
     // Authentication states
     @State private var isAuthenticated = false
     @State private var username: String = ""
     @State private var password: String = ""
     @State private var authenticationError: String? = nil
-
+    
     // Search functionality
     @State private var searchText = ""
-
+    
     // Sheet toggles
     @State private var isShowingAddOwnerSheet = false
     @State private var isShowingMetricsView = false
-
+    
     // State for selected dog owner
     @State private var selectedDogOwner: DogOwner?
 
     var body: some View {
         if isAuthenticated {
-            // Main content if authenticated
             NavigationSplitView {
                 // Sidebar Content
                 List {
@@ -50,8 +49,8 @@ struct ContentView: View {
                     }
                 }
                 .sheet(isPresented: $isShowingAddOwnerSheet) {
-                    AddDogOwnerView { ownerName, dogName, breed, contactInfo, address, notes, selectedImageData, birthdate, healthCondition, treatment, healthNotes in
-                        addDogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, notes: notes, selectedImageData: selectedImageData, birthdate: birthdate, healthCondition: healthCondition, treatment: treatment, healthNotes: healthNotes)
+                    AddDogOwnerView { ownerName, dogName, breed, contactInfo, address, notes, selectedImageData, birthdate, healthCondition, treatment, healthNotes, behaviorTags in
+                        addDogOwner(ownerName: ownerName, dogName: dogName, breed: breed, contactInfo: contactInfo, address: address, notes: notes, selectedImageData: selectedImageData, birthdate: birthdate, healthCondition: healthCondition, treatment: treatment, healthNotes: healthNotes, behaviorTags: behaviorTags)
                     }
                 }
                 .sheet(isPresented: $isShowingMetricsView) {
@@ -66,26 +65,25 @@ struct ContentView: View {
                 }
             }
         } else {
-            // Show Login View if not authenticated
             LoginView(isAuthenticated: $isAuthenticated, authenticationError: $authenticationError)
         }
     }
-
+    
     // MARK: - Login View
     struct LoginView: View {
         @Binding var isAuthenticated: Bool
         @Binding var authenticationError: String?
-
+        
         @State private var username: String = ""
         @State private var password: String = ""
-
+        
         var body: some View {
             VStack(spacing: 16) {
                 Text("Welcome to Furfolio")
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .padding(.bottom, 20)
-
+                
                 TextField("Username", text: $username)
                     .padding()
                     .autocapitalization(.none)
@@ -93,13 +91,13 @@ struct ContentView: View {
                     .background(Color(UIColor.secondarySystemBackground))
                     .cornerRadius(8)
                     .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
-
+                
                 SecureField("Password", text: $password)
                     .padding()
                     .background(Color(UIColor.secondarySystemBackground))
                     .cornerRadius(8)
                     .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
-
+                
                 Button(action: authenticateUser) {
                     Text("Login")
                         .font(.headline)
@@ -109,14 +107,14 @@ struct ContentView: View {
                         .background(Color.blue)
                         .cornerRadius(8)
                 }
-
+                
                 if let error = authenticationError {
                     Text(error)
                         .foregroundColor(.red)
                         .font(.footnote)
                         .padding(.top, 10)
                 }
-
+                
                 if isAuthenticated {
                     Text("Successfully Authenticated!")
                         .foregroundColor(.green)
@@ -126,7 +124,7 @@ struct ContentView: View {
             }
             .padding()
         }
-
+        
         private func authenticateUser() {
             let storedCredentials: [String: String] = ["lvconcepcion": "jesus2024"]
             if let storedPassword = storedCredentials[username], storedPassword == password {
@@ -138,7 +136,7 @@ struct ContentView: View {
             }
         }
     }
-
+    
     // MARK: - Helper Views
     private var businessInsightsSection: some View {
         Section(header: Text("Business Insights")) {
@@ -147,7 +145,7 @@ struct ContentView: View {
             }
         }
     }
-
+    
     private var upcomingAppointmentsSection: some View {
         Section(header: Text("Upcoming Appointments")) {
             let upcomingAppointments = fetchUpcomingAppointments()
@@ -168,7 +166,7 @@ struct ContentView: View {
             }
         }
     }
-
+    
     private var dogOwnersSection: some View {
         Section(header: Text("Dog Owners")) {
             let filteredDogOwners = filterDogOwners()
@@ -188,7 +186,7 @@ struct ContentView: View {
             }
         }
     }
-
+    
     private var emptyDetailView: some View {
         VStack {
             Text("Select a dog owner to view details.")
@@ -202,7 +200,7 @@ struct ContentView: View {
                 .foregroundColor(.gray.opacity(0.5))
         }
     }
-
+    
     // MARK: - Data Fetching
     private func fetchUpcomingAppointments() -> [Appointment] {
         let today = Date()
@@ -211,11 +209,11 @@ struct ContentView: View {
             .filter { $0.date > today && $0.date <= endDate }
             .sorted { $0.date < $1.date }
     }
-
+    
     private func findOwner(for appointment: Appointment) -> DogOwner? {
         dogOwners.first { $0.appointments.contains(appointment) }
     }
-
+    
     private func filterDogOwners() -> [DogOwner] {
         let lowercasedSearchText = searchText.lowercased()
         return dogOwners.filter { owner in
@@ -227,9 +225,9 @@ struct ContentView: View {
             owner.notes.lowercased().contains(lowercasedSearchText)
         }
     }
-
+    
     // MARK: - Data Management
-    private func addDogOwner(ownerName: String, dogName: String, breed: String, contactInfo: String, address: String, notes: String, selectedImageData: Data?, birthdate: Date?, healthCondition: String, treatment: String, healthNotes: String) {
+    private func addDogOwner(ownerName: String, dogName: String, breed: String, contactInfo: String, address: String, notes: String, selectedImageData: Data?, birthdate: Date?, healthCondition: String, treatment: String, healthNotes: String, behaviorTags: [String]) {
         withAnimation {
             let newOwner = DogOwner(
                 ownerName: ownerName,
@@ -239,13 +237,14 @@ struct ContentView: View {
                 address: address,
                 dogImage: selectedImageData,
                 notes: notes,
-                birthdate: birthdate
+                birthdate: birthdate,
+                behaviorTags: behaviorTags  // Added behaviorTags field
             )
             
             // Create HealthRecord and add it to newOwner's healthRecords
             let healthRecord = HealthRecord(dogOwner: newOwner, date: Date(), healthCondition: healthCondition, treatment: treatment, notes: healthNotes)
             newOwner.healthRecords.append(healthRecord)
-
+            
             modelContext.insert(newOwner)
         }
     }
